@@ -19,7 +19,7 @@ namespace GorIsleMVC.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ApplyMorphology(IFormFile imageFile, string operation, int kernelSize = 3)
+        public async Task<IActionResult> ApplyMorphology(IFormFile imageFile, string operation, int kernelSize = 3, bool isColorImage = true)
         {
             if (imageFile == null || imageFile.Length == 0)
             {
@@ -50,10 +50,10 @@ namespace GorIsleMVC.Controllers
                             // Morfolojik işlemi uygula
                             var resultBitmap = operation.ToLower() switch
                             {
-                                "dilation" => ApplyDilation(bitmap, kernelSize),
-                                "erosion" => ApplyErosion(bitmap, kernelSize),
-                                "opening" => ApplyOpening(bitmap, kernelSize),
-                                "closing" => ApplyClosing(bitmap, kernelSize),
+                                "dilation" => isColorImage ? ApplyColorDilation(bitmap, kernelSize) : ApplyDilation(bitmap, kernelSize),
+                                "erosion" => isColorImage ? ApplyColorErosion(bitmap, kernelSize) : ApplyErosion(bitmap, kernelSize),
+                                "opening" => isColorImage ? ApplyColorOpening(bitmap, kernelSize) : ApplyOpening(bitmap, kernelSize),
+                                "closing" => isColorImage ? ApplyColorClosing(bitmap, kernelSize) : ApplyClosing(bitmap, kernelSize),
                                 _ => throw new ArgumentException("Geçersiz morfolojik işlem.")
                             };
 
@@ -66,6 +66,7 @@ namespace GorIsleMVC.Controllers
                             TempData["ProcessedImage"] = "/uploads/" + resultFileName;
                             TempData["Operation"] = operation;
                             TempData["KernelSize"] = kernelSize;
+                            TempData["IsColorImage"] = isColorImage;
                         }
                     }
                 }
@@ -79,6 +80,87 @@ namespace GorIsleMVC.Controllers
             }
         }
 
+        private Bitmap ApplyColorDilation(Bitmap sourceBitmap, int kernelSize)
+        {
+            int width = sourceBitmap.Width;
+            int height = sourceBitmap.Height;
+            var resultBitmap = new Bitmap(width, height);
+            int offset = kernelSize / 2;
+
+            // Her kanal için ayrı işlem yap
+            for (int x = offset; x < width - offset; x++)
+            {
+                for (int y = offset; y < height - offset; y++)
+                {
+                    int maxR = 0, maxG = 0, maxB = 0;
+
+                    // Kernel içindeki pikselleri kontrol et
+                    for (int i = -offset; i <= offset; i++)
+                    {
+                        for (int j = -offset; j <= offset; j++)
+                        {
+                            var pixel = sourceBitmap.GetPixel(x + i, y + j);
+                            maxR = Math.Max(maxR, pixel.R);
+                            maxG = Math.Max(maxG, pixel.G);
+                            maxB = Math.Max(maxB, pixel.B);
+                        }
+                    }
+
+                    resultBitmap.SetPixel(x, y, Color.FromArgb(maxR, maxG, maxB));
+                }
+            }
+
+            return resultBitmap;
+        }
+
+        private Bitmap ApplyColorErosion(Bitmap sourceBitmap, int kernelSize)
+        {
+            int width = sourceBitmap.Width;
+            int height = sourceBitmap.Height;
+            var resultBitmap = new Bitmap(width, height);
+            int offset = kernelSize / 2;
+
+            // Her kanal için ayrı işlem yap
+            for (int x = offset; x < width - offset; x++)
+            {
+                for (int y = offset; y < height - offset; y++)
+                {
+                    int minR = 255, minG = 255, minB = 255;
+
+                    // Kernel içindeki pikselleri kontrol et
+                    for (int i = -offset; i <= offset; i++)
+                    {
+                        for (int j = -offset; j <= offset; j++)
+                        {
+                            var pixel = sourceBitmap.GetPixel(x + i, y + j);
+                            minR = Math.Min(minR, pixel.R);
+                            minG = Math.Min(minG, pixel.G);
+                            minB = Math.Min(minB, pixel.B);
+                        }
+                    }
+
+                    resultBitmap.SetPixel(x, y, Color.FromArgb(minR, minG, minB));
+                }
+            }
+
+            return resultBitmap;
+        }
+
+        private Bitmap ApplyColorOpening(Bitmap sourceBitmap, int kernelSize)
+        {
+            // Açma = Aşınma + Genişleme
+            var erodedImage = ApplyColorErosion(sourceBitmap, kernelSize);
+            return ApplyColorDilation(erodedImage, kernelSize);
+        }
+
+        private Bitmap ApplyColorClosing(Bitmap sourceBitmap, int kernelSize)
+        {
+            // Kapama = Genişleme + Aşınma
+            var dilatedImage = ApplyColorDilation(sourceBitmap, kernelSize);
+            return ApplyColorErosion(dilatedImage, kernelSize);
+        }
+
+        // Mevcut siyah-beyaz işlem metodları
         private Bitmap ApplyDilation(Bitmap sourceBitmap, int kernelSize)
         {
             int width = sourceBitmap.Width;

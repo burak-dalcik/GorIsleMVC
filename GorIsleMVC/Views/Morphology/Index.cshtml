@@ -54,6 +54,16 @@
                             </div>
                         </div>
 
+                        <div class="form-group mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isColorImage" name="isColorImage" value="true" checked>
+                                <label class="form-check-label" for="isColorImage">
+                                    Renkli Görüntü İşleme
+                                </label>
+                                <div class="form-text">İşaretlenirse RGB kanalları ayrı ayrı işlenir, işaretlenmezse görüntü önce siyah-beyaza çevrilir.</div>
+                            </div>
+                        </div>
+
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 İşlemi Uygula
@@ -71,21 +81,25 @@
                     <div class="mb-4">
                         <h5>Genişleme (Dilation)</h5>
                         <p>Görüntüdeki nesneleri genişletir, küçük boşlukları doldurur ve nesne sınırlarını yumuşatır.</p>
+                        <p class="text-muted small">RGB modunda: Her renk kanalı için maksimum değer alınır.</p>
                     </div>
 
                     <div class="mb-4">
                         <h5>Aşınma (Erosion)</h5>
                         <p>Görüntüdeki nesneleri küçültür, ince detayları kaldırır ve nesneleri ayırır.</p>
+                        <p class="text-muted small">RGB modunda: Her renk kanalı için minimum değer alınır.</p>
                     </div>
 
                     <div class="mb-4">
                         <h5>Açma (Opening)</h5>
                         <p>Önce aşınma, sonra genişleme uygulanır. Küçük gürültüleri kaldırır ve nesne sınırlarını yumuşatır.</p>
+                        <p class="text-muted small">RGB modunda: Her kanal için ayrı ayrı açma işlemi uygulanır.</p>
                     </div>
 
                     <div>
                         <h5>Kapama (Closing)</h5>
                         <p>Önce genişleme, sonra aşınma uygulanır. Küçük boşlukları doldurur ve nesne sınırlarını birleştirir.</p>
+                        <p class="text-muted small">RGB modunda: Her kanal için ayrı ayrı kapama işlemi uygulanır.</p>
                     </div>
 
                     <div class="alert alert-info mt-3">
