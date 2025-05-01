@@ -1,42 +1,108 @@
 @{
-    ViewData["Title"] = "Aritmetik İşlemler";
+    ViewData["Title"] = "Görüntü Aritmetik İşlemleri";
 }
 
-<div class="container mt-4">
-    <h2>Görüntü Aritmetik İşlemleri</h2>
-    
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger">
-            @TempData["Error"]
-        </div>
-    }
-
-    <div class="card">
-        <div class="card-body">
-            <form asp-action="Upload" method="post" enctype="multipart/form-data">
-                <div class="form-group mb-3">
-                    <label>Birinci Görüntü</label>
-                    <input type="file" name="firstImage" class="form-control-file" accept="image/*" required />
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">@ViewData["Title"]</h2>
                 </div>
-                
-                <div class="form-group mb-3">
-                    <label>İkinci Görüntü</label>
-                    <input type="file" name="secondImage" class="form-control-file" accept="image/*" required />
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+                    <form asp-action="ProcessImages" method="post" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="imageFile1" class="form-label">Birinci Görüntü</label>
+                                    <input type="file" class="form-control" id="imageFile1" name="imageFile1" accept="image/*" required>
+                                    <div id="preview1" class="mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="imageFile2" class="form-label">İkinci Görüntü</label>
+                                    <input type="file" class="form-control" id="imageFile2" name="imageFile2" accept="image/*" required>
+                                    <div id="preview2" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="operation" class="form-label">İşlem Seçin</label>
+                            <select class="form-select" id="operation" name="operation" required>
+                                <option value="">İşlem seçin...</option>
+                                <option value="add">Toplama</option>
+                                <option value="subtract">Çıkarma</option>
+                                <option value="multiply">Çarpma</option>
+                                <option value="average">Ortalama</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <ul class="mt-2">
+                                    <li><strong>Toplama:</strong> İki görüntünün piksel değerlerini toplar</li>
+                                    <li><strong>Çıkarma:</strong> İkinci görüntüyü birinciden çıkarır</li>
+                                    <li><strong>Çarpma:</strong> İki görüntünün piksel değerlerini çarpar</li>
+                                    <li><strong>Ortalama:</strong> İki görüntünün piksel değerlerinin ortalamasını alır</li>
+                                </ul>
+                            </small>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-calculator"></i> İşlemi Uygula
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="form-group mb-3">
-                    <label>İşlem Seçin</label>
-                    <select name="operation" class="form-control" required>
-                        <option value="add">Toplama</option>
-                        <option value="subtract">Çıkarma</option>
-                        <option value="multiply">Çarpma</option>
-                        <option value="divide">Bölme</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn btn-primary">İşlemi Uygula</button>
-            </form>
+            </div>
         </div>
     </div>
-</div> 
+</div>
+
+@section Scripts {
+    <script>
+        // Font Awesome ikonları için CDN
+        if (!document.getElementById('fontawesome-css')) {
+            var link = document.createElement('link');
+            link.id = 'fontawesome-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+            document.head.appendChild(link);
+        }
+
+        // Görüntü önizleme fonksiyonu
+        function setupImagePreview(inputId, previewId) {
+            document.getElementById(inputId).addEventListener('change', function(e) {
+                const previewDiv = document.getElementById(previewId);
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewDiv.innerHTML = '';
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'img-fluid rounded';
+                        img.style.maxHeight = '200px';
+                        previewDiv.appendChild(img);
+                        
+                        // Boyut bilgisini ekle
+                        img.onload = function() {
+                            const sizeInfo = document.createElement('p');
+                            sizeInfo.className = 'text-muted mt-2 mb-0';
+                            sizeInfo.textContent = `Boyut: ${this.naturalWidth}x${this.naturalHeight}`;
+                            previewDiv.appendChild(sizeInfo);
+                        };
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        }
+
+        // Her iki görüntü için önizleme ayarla
+        setupImagePreview('imageFile1', 'preview1');
+        setupImagePreview('imageFile2', 'preview2');
+    </script>
+} 

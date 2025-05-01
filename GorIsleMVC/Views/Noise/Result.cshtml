@@ -1,3 +1,4 @@
+@using System.Globalization
 @{
     ViewData["Title"] = "İşlem Sonucu";
 }
@@ -11,7 +12,7 @@
                 <p class="text-center mb-0">
                     @if (TempData["ProcessType"].ToString() == "noise")
                     {
-                        <span>Uygulanan Gürültü Yoğunluğu: @TempData["Density"]</span>
+                        <span>Uygulanan Gürültü Yoğunluğu: %@(TempData["Density"])</span>
                     }
                     else
                     {
@@ -66,10 +67,10 @@
         <div class="card-body">
             @if (TempData["ProcessType"].ToString() == "noise")
             {
-                <p>Salt & Pepper gürültüsü, @TempData["Density"] yoğunluğunda uygulandı. Bu işlem:</p>
+                <p>Salt & Pepper gürültüsü, %@(TempData["Density"]) yoğunluğunda uygulandı. Bu işlem:</p>
                 <ul>
                     <li>Rastgele konumlara siyah ve beyaz pikseller ekledi</li>
-                    <li>Orijinal görüntünün yaklaşık %@(Convert.ToDouble(TempData["Density"]) * 100)'i gürültü olarak değiştirildi</li>
+                    <li>Orijinal görüntünün yaklaşık %@(TempData["Density"])'i gürültü olarak değiştirildi</li>
                     <li>Gürültü pikselleri eşit olasılıkla siyah veya beyaz olarak belirlendi</li>
                 </ul>
             }

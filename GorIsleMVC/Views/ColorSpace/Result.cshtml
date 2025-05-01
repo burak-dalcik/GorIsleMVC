@@ -1,0 +1,73 @@
+@{
+    ViewData["Title"] = "Renk Uzayı Dönüşümü Sonucu";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-center">@ViewData["Title"]</h2>
+            @if (TempData["ConversionType"] != null)
+            {
+                <p class="text-center mb-0">
+                    <span>Uygulanan Dönüşüm: @TempData["ConversionType"]</span>
+                </p>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Orijinal Görüntü</h5>
+                            <img src="@TempData["OriginalImage"]" class="img-fluid rounded" alt="Orijinal Görüntü">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Dönüştürülmüş Görüntü</h5>
+                            <img src="@TempData["ProcessedImage"]" class="img-fluid rounded" alt="İşlenmiş Görüntü">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col text-center">
+                    <a asp-action="Index" class="btn btn-primary me-2">Yeni Dönüşüm Yap</a>
+                    <a href="@TempData["ProcessedImage"]" class="btn btn-secondary" download>Dönüştürülmüş Görüntüyü İndir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Uygulanan Dönüşüm Hakkında</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["ConversionType"]?.ToString() == "RGB->YUV")
+            {
+                <p>RGB'den YUV'a dönüşüm uygulandı. Bu işlem:</p>
+                <ul>
+                    <li>Y (Parlaklık) bileşeni: Görüntünün siyah-beyaz versiyonunu temsil eder</li>
+                    <li>U (Mavi renk farkı) bileşeni: Mavi renk bilgisini kodlar</li>
+                    <li>V (Kırmızı renk farkı) bileşeni: Kırmızı renk bilgisini kodlar</li>
+                </ul>
+                <p>YUV renk uzayı, özellikle video sıkıştırma ve televizyon yayıncılığında yaygın olarak kullanılır.</p>
+            }
+            else if (TempData["ConversionType"]?.ToString() == "YUV->RGB")
+            {
+                <p>YUV'dan RGB'ye dönüşüm uygulandı. Bu işlem:</p>
+                <ul>
+                    <li>Kırmızı (R) bileşeni: Ana renk kanalı</li>
+                    <li>Yeşil (G) bileşeni: Ana renk kanalı</li>
+                    <li>Mavi (B) bileşeni: Ana renk kanalı</li>
+                </ul>
+                <p>RGB renk uzayı, ekranlar ve dijital görüntü işlemede en yaygın kullanılan renk uzayıdır.</p>
+            }
+        </div>
+    </div>
+</div> 

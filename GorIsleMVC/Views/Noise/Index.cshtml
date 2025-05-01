@@ -40,9 +40,12 @@
                                             <input type="file" class="form-control-file" id="imageFile" name="imageFile" accept="image/*" required>
                                         </div>
                                         <div class="form-group">
-                                            <label for="noiseDensity">Gürültü Yoğunluğu (0.0 - 1.0):</label>
+                                            <label for="noiseDensity">Gürültü Yoğunluğu (%):</label>
                                             <input type="number" class="form-control" id="noiseDensity" name="noiseDensity" 
-                                                   min="0.0" max="1.0" step="0.01" value="0.05" required>
+                                                   min="0" max="100" step="1" value="5" required>
+                                            <small class="form-text text-muted">
+                                                Gürültü yoğunluğunu yüzde olarak girin (0-100 arası).
+                                            </small>
                                         </div>
                                         <button type="submit" class="btn btn-primary">Salt & Pepper Gürültüsü Ekle</button>
                                     </form>
@@ -115,6 +118,13 @@
 
 @section Scripts {
     <script>
+        // Form kontrollerinin değer değişimlerini izle
+        document.getElementById('noiseDensity').addEventListener('change', function(e) {
+            var value = parseInt(e.target.value);
+            if (value < 0) e.target.value = 0;
+            if (value > 100) e.target.value = 100;
+        });
+
         // Görüntü önizleme için JavaScript
         function setupImagePreview(inputId, formSelector) {
             document.getElementById(inputId).addEventListener('change', function (e) {

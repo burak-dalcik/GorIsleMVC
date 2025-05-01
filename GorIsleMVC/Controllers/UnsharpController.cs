@@ -6,13 +6,20 @@ namespace GorIsleMVC.Controllers
 {
     public class UnsharpController : Controller
     {
+        private readonly IWebHostEnvironment _environment;
+
+        public UnsharpController(IWebHostEnvironment environment)
+        {
+            _environment = environment;
+        }
+
         public IActionResult Index()
         {
             return View();
         }
 
         [HttpPost]
-        public IActionResult ProcessImage(IFormFile imageFile, double amount, int radius, int threshold)
+        public async Task<IActionResult> ProcessImage(IFormFile imageFile, float amount = 1.5f, float threshold = 0)
         {
             if (imageFile == null || imageFile.Length == 0)
             {
@@ -22,24 +29,39 @@ namespace GorIsleMVC.Controllers
 
             try
             {
-                using (var ms = new MemoryStream())
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var originalPath = Path.Combine(uploadsFolder, originalFileName);
+
+                using (var stream = new MemoryStream())
                 {
-                    imageFile.CopyTo(ms);
-                    using (var originalImage = Image.FromStream(ms))
+                    await imageFile.CopyToAsync(stream);
+                    stream.Position = 0;
+
+                    using (var originalImage = Image.FromStream(stream))
                     {
+                        originalImage.Save(originalPath, ImageFormat.Png);
+
                         using (var bitmap = new Bitmap(originalImage))
                         {
-                            var processedImage = ApplyUnsharpMask(bitmap, amount, radius, threshold);
+                            var processedImage = ApplyUnsharpMask(bitmap, amount, threshold);
 
-                            using (var resultStream = new MemoryStream())
-                            {
-                                processedImage.Save(resultStream, ImageFormat.Jpeg);
-                                resultStream.Position = 0;
-                                return File(resultStream.ToArray(), "image/jpeg", "unsharp_" + imageFile.FileName);
-                            }
+                            var resultFileName = $"unsharp_{DateTime.Now:yyyyMMddHHmmss}.png";
+                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                            processedImage.Save(resultPath, ImageFormat.Png);
+
+                            TempData["OriginalImage"] = $"/uploads/{originalFileName}";
+                            TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
+                            TempData["ProcessType"] = "Unsharp Masking";
+                            TempData["Parameters"] = $"Amount: {amount}, Threshold: {threshold}";
                         }
                     }
                 }
+
+                return View("Result");
             }
             catch (Exception ex)
             {
@@ -48,143 +70,98 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap ApplyUnsharpMask(Bitmap original, double amount, int radius, int threshold)
+        private Bitmap ApplyUnsharpMask(Bitmap original, float amount, float threshold)
         {
             int width = original.Width;
             int height = original.Height;
             
-            // Bulanık görüntü oluştur
-            var blurred = ApplyGaussianBlur(original, radius);
+            // Gaussian Blur için kernel
+            float[,] kernel = {
+                { 1/16f, 2/16f, 1/16f },
+                { 2/16f, 4/16f, 2/16f },
+                { 1/16f, 2/16f, 1/16f }
+            };
+
+            // Blur uygulanmış kopya oluştur
+            Bitmap blurred = new Bitmap(width, height);
             
-            // Keskinleştirilmiş görüntü
-            Bitmap result = new Bitmap(width, height);
-
-            for (int x = 0; x < width; x++)
+            // Gaussian Blur uygula
+            for (int y = 1; y < height - 1; y++)
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 1; x < width - 1; x++)
                 {
-                    Color originalColor = original.GetPixel(x, y);
-                    Color blurredColor = blurred.GetPixel(x, y);
+                    float rSum = 0, gSum = 0, bSum = 0;
 
-                    // Her renk kanalı için keskinleştirme uygula
-                    int r = ApplyUnsharpMaskToChannel(originalColor.R, blurredColor.R, amount, threshold);
-                    int g = ApplyUnsharpMaskToChannel(originalColor.G, blurredColor.G, amount, threshold);
-                    int b = ApplyUnsharpMaskToChannel(originalColor.B, blurredColor.B, amount, threshold);
-
-                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
-                }
-            }
-
-            return result;
-        }
-
-        private int ApplyUnsharpMaskToChannel(int original, int blurred, double amount, int threshold)
-        {
-            int difference = original - blurred;
-
-            // Eşik değeri kontrolü
-            if (Math.Abs(difference) < threshold)
-                return original;
-
-            // Keskinleştirme formülü: Original + (Original - Blurred) * Amount
-            int sharpened = (int)(original + difference * amount);
-            return Math.Min(255, Math.Max(0, sharpened));
-        }
-
-        private Bitmap ApplyGaussianBlur(Bitmap original, int radius)
-        {
-            int width = original.Width;
-            int height = original.Height;
-            Bitmap result = new Bitmap(width, height);
-
-            // Gaussian kernel oluştur
-            double[,] kernel = CreateGaussianKernel(radius);
-            int kernelSize = radius * 2 + 1;
-            int kernelRadius = kernelSize / 2;
-
-            for (int x = kernelRadius; x < width - kernelRadius; x++)
-            {
-                for (int y = kernelRadius; y < height - kernelRadius; y++)
-                {
-                    double r = 0, g = 0, b = 0;
-                    double weightSum = 0;
-
-                    // Kernel'i uygula
-                    for (int i = -kernelRadius; i <= kernelRadius; i++)
+                    for (int ky = -1; ky <= 1; ky++)
                     {
-                        for (int j = -kernelRadius; j <= kernelRadius; j++)
+                        for (int kx = -1; kx <= 1; kx++)
                         {
-                            Color pixel = original.GetPixel(x + i, y + j);
-                            double weight = kernel[i + kernelRadius, j + kernelRadius];
+                            Color pixel = original.GetPixel(x + kx, y + ky);
+                            float weight = kernel[ky + 1, kx + 1];
 
-                            r += pixel.R * weight;
-                            g += pixel.G * weight;
-                            b += pixel.B * weight;
-                            weightSum += weight;
+                            rSum += pixel.R * weight;
+                            gSum += pixel.G * weight;
+                            bSum += pixel.B * weight;
                         }
                     }
 
-                    // Normalize et
-                    r /= weightSum;
-                    g /= weightSum;
-                    b /= weightSum;
+                    int r = Math.Min(255, Math.Max(0, (int)rSum));
+                    int g = Math.Min(255, Math.Max(0, (int)gSum));
+                    int b = Math.Min(255, Math.Max(0, (int)bSum));
 
-                    result.SetPixel(x, y, Color.FromArgb(
-                        (int)Math.Round(r),
-                        (int)Math.Round(g),
-                        (int)Math.Round(b)));
+                    blurred.SetPixel(x, y, Color.FromArgb(r, g, b));
+                }
+            }
+
+            // Sonuç görüntüsü
+            Bitmap result = new Bitmap(width, height);
+
+            // Unsharp Mask uygula
+            for (int y = 1; y < height - 1; y++)
+            {
+                for (int x = 1; x < width - 1; x++)
+                {
+                    Color originalPixel = original.GetPixel(x, y);
+                    Color blurredPixel = blurred.GetPixel(x, y);
+
+                    // Her kanal için mask hesapla
+                    int diffR = originalPixel.R - blurredPixel.R;
+                    int diffG = originalPixel.G - blurredPixel.G;
+                    int diffB = originalPixel.B - blurredPixel.B;
+
+                    // Threshold kontrolü
+                    if (Math.Abs(diffR) > threshold || Math.Abs(diffG) > threshold || Math.Abs(diffB) > threshold)
+                    {
+                        // Keskinleştirme uygula
+                        int newR = Math.Min(255, Math.Max(0, originalPixel.R + (int)(diffR * amount)));
+                        int newG = Math.Min(255, Math.Max(0, originalPixel.G + (int)(diffG * amount)));
+                        int newB = Math.Min(255, Math.Max(0, originalPixel.B + (int)(diffB * amount)));
+
+                        result.SetPixel(x, y, Color.FromArgb(newR, newG, newB));
+                    }
+                    else
+                    {
+                        // Threshold altındaki pikselleri kopyala
+                        result.SetPixel(x, y, originalPixel);
+                    }
                 }
             }
 
             // Kenar pikselleri kopyala
             for (int x = 0; x < width; x++)
             {
-                for (int y = 0; y < kernelRadius; y++)
-                {
-                    result.SetPixel(x, y, original.GetPixel(x, y));
-                    result.SetPixel(x, height - 1 - y, original.GetPixel(x, height - 1 - y));
-                }
+                result.SetPixel(x, 0, original.GetPixel(x, 0));
+                result.SetPixel(x, height - 1, original.GetPixel(x, height - 1));
             }
 
             for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < kernelRadius; x++)
-                {
-                    result.SetPixel(x, y, original.GetPixel(x, y));
-                    result.SetPixel(width - 1 - x, y, original.GetPixel(width - 1 - x, y));
-                }
+                result.SetPixel(0, y, original.GetPixel(0, y));
+                result.SetPixel(width - 1, y, original.GetPixel(width - 1, y));
             }
 
+            blurred.Dispose();
             return result;
-        }
-
-        private double[,] CreateGaussianKernel(int radius)
-        {
-            int size = radius * 2 + 1;
-            double[,] kernel = new double[size, size];
-            double sigma = radius / 3.0;
-            double sum = 0;
-
-            for (int x = -radius; x <= radius; x++)
-            {
-                for (int y = -radius; y <= radius; y++)
-                {
-                    double exponent = -(x * x + y * y) / (2 * sigma * sigma);
-                    kernel[x + radius, y + radius] = Math.Exp(exponent) / (2 * Math.PI * sigma * sigma);
-                    sum += kernel[x + radius, y + radius];
-                }
-            }
-
-            // Normalize kernel
-            for (int x = 0; x < size; x++)
-            {
-                for (int y = 0; y < size; y++)
-                {
-                    kernel[x, y] /= sum;
-                }
-            }
-
-            return kernel;
         }
     }
 } 

@@ -20,13 +20,16 @@ namespace GorIsleMVC.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddNoise(IFormFile imageFile, double noiseDensity)
+        public async Task<IActionResult> AddNoise(IFormFile imageFile, int noiseDensity)
         {
             if (imageFile == null || imageFile.Length == 0)
             {
                 TempData["Error"] = "Lütfen bir görüntü dosyası seçin.";
                 return RedirectToAction("Index");
             }
+
+            // Yüzdeyi ondalığa çevir (1-100 -> 0.01-1.0)
+            double densityValue = Math.Max(0, Math.Min(100, noiseDensity)) / 100.0;
 
             try
             {
@@ -48,15 +51,15 @@ namespace GorIsleMVC.Controllers
 
                         using (var bitmap = new Bitmap(originalImage))
                         {
-                            var noisyImage = ApplySaltAndPepperNoise(bitmap, noiseDensity);
+                            var noisyImage = ApplySaltAndPepperNoise(bitmap, densityValue);
 
-                            var resultFileName = $"noisy_{DateTime.Now:yyyyMMddHHmmss}.png";
+                            var resultFileName = $"noisy_{noiseDensity}_{DateTime.Now:yyyyMMddHHmmss}.png";
                             var resultPath = Path.Combine(uploadsFolder, resultFileName);
                             noisyImage.Save(resultPath, ImageFormat.Png);
 
                             TempData["OriginalImage"] = $"/uploads/{originalFileName}";
                             TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
-                            TempData["Density"] = noiseDensity;
+                            TempData["Density"] = noiseDensity.ToString();
                             TempData["ProcessType"] = "noise";
                         }
                     }

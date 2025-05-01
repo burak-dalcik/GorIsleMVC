@@ -37,6 +37,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=GrayImage}/{action=Upload}/{id?}");
+    pattern: "{controller=ColorSpace}/{action=Index}/{id?}");
 
 app.Run();

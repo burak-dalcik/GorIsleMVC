@@ -3,41 +3,85 @@
 }
 
 <div class="container mt-4">
-    <h2>Aritmetik İşlem Sonucu</h2>
-    <h4 class="mb-4">Uygulanan İşlem: @TempData["Operation"]</h4>
-
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Birinci Görüntü</h5>
-                    <img src="@TempData["FirstImage"]" class="img-fluid" alt="Birinci Görüntü" />
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-center">@ViewData["Title"]</h2>
+            @if (TempData["ProcessType"] != null)
+            {
+                <p class="text-center mb-0">
+                    <span>@TempData["ProcessType"]</span>
+                </p>
+                <p class="text-center mb-0">
+                    <span>İşlem: @TempData["Operation"]</span>
+                </p>
+                <p class="text-center mb-0">
+                    <span>@TempData["OriginalSizes"]</span>
+                </p>
+                <p class="text-center mb-0">
+                    <span>@TempData["FinalSize"]</span>
+                </p>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Birinci Görüntü</h5>
+                            <img src="@TempData["Image1"]" class="img-fluid rounded" alt="Birinci Görüntü">
+                            <div class="mt-3">
+                                <a href="@TempData["Image1"]" class="btn btn-primary" download>
+                                    <i class="fas fa-download"></i> İndir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">İkinci Görüntü</h5>
+                            <img src="@TempData["Image2"]" class="img-fluid rounded" alt="İkinci Görüntü">
+                            <div class="mt-3">
+                                <a href="@TempData["Image2"]" class="btn btn-primary" download>
+                                    <i class="fas fa-download"></i> İndir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Sonuç Görüntüsü</h5>
+                            <img src="@TempData["Result"]" class="img-fluid rounded" alt="Sonuç Görüntüsü">
+                            <div class="mt-3">
+                                <a href="@TempData["Result"]" class="btn btn-success" download>
+                                    <i class="fas fa-download"></i> İndir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">İkinci Görüntü</h5>
-                    <img src="@TempData["SecondImage"]" class="img-fluid" alt="İkinci Görüntü" />
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Sonuç</h5>
-                    <img src="@TempData["ResultImage"]" class="img-fluid" alt="Sonuç Görüntüsü" />
-                </div>
+            <div class="text-center mt-3">
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Yeni İşlem
+                </a>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="row">
-        <div class="col">
-            <a asp-action="Index" class="btn btn-primary">Yeni İşlem</a>
-        </div>
-    </div>
-</div> 
+@section Scripts {
+    <script>
+        // Font Awesome ikonları için CDN
+        if (!document.getElementById('fontawesome-css')) {
+            var link = document.createElement('link');
+            link.id = 'fontawesome-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+            document.head.appendChild(link);
+        }
+    </script>
+} 

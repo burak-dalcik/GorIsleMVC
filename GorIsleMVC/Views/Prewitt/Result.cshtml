@@ -1,0 +1,65 @@
+@{
+    ViewData["Title"] = "İşlem Sonucu";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-center">@ViewData["Title"]</h2>
+            @if (TempData["ProcessType"] != null)
+            {
+                <p class="text-center mb-0">
+                    <span>Uygulanan İşlem: @TempData["ProcessType"]</span>
+                </p>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Orijinal Görüntü</h5>
+                            <img src="@TempData["OriginalImage"]" class="img-fluid rounded" alt="Orijinal Görüntü">
+                            <div class="mt-3">
+                                <a href="@TempData["OriginalImage"]" class="btn btn-primary" download>
+                                    <i class="fas fa-download"></i> Orijinal Görüntüyü İndir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">İşlenmiş Görüntü</h5>
+                            <img src="@TempData["ProcessedImage"]" class="img-fluid rounded" alt="İşlenmiş Görüntü">
+                            <div class="mt-3">
+                                <a href="@TempData["ProcessedImage"]" class="btn btn-success" download>
+                                    <i class="fas fa-download"></i> İşlenmiş Görüntüyü İndir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Yeni Görüntü İşle
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Font Awesome ikonları için CDN
+        if (!document.getElementById('fontawesome-css')) {
+            var link = document.createElement('link');
+            link.id = 'fontawesome-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+            document.head.appendChild(link);
+        }
+    </script>
+} 

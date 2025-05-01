@@ -2,12 +2,12 @@
     ViewData["Title"] = "Unsharp Masking";
 }
 
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h2>@ViewData["Title"]</h2>
+                    <h2 class="text-center">@ViewData["Title"]</h2>
                 </div>
                 <div class="card-body">
                     @if (TempData["Error"] != null)
@@ -16,80 +16,27 @@
                             @TempData["Error"]
                         </div>
                     }
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>Görüntü İşleme</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form asp-action="ProcessImage" method="post" enctype="multipart/form-data">
-                                        <div class="form-group">
-                                            <label for="imageFile">Görüntü Seçin:</label>
-                                            <input type="file" class="form-control-file" id="imageFile" name="imageFile" accept="image/*" required>
-                                        </div>
-                                        
-                                        <div class="form-group">
-                                            <label for="amount">Keskinleştirme Miktarı (0.1 - 5.0):</label>
-                                            <input type="number" class="form-control" id="amount" name="amount" 
-                                                   min="0.1" max="5.0" step="0.1" value="1.5" required>
-                                            <small class="form-text text-muted">
-                                                Daha yüksek değerler daha keskin sonuçlar üretir.
-                                            </small>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="radius">Bulanıklaştırma Yarıçapı (1 - 5):</label>
-                                            <input type="number" class="form-control" id="radius" name="radius" 
-                                                   min="1" max="5" value="2" required>
-                                            <small class="form-text text-muted">
-                                                Daha büyük yarıçap daha geniş alanda keskinleştirme sağlar.
-                                            </small>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="threshold">Eşik Değeri (0 - 255):</label>
-                                            <input type="number" class="form-control" id="threshold" name="threshold" 
-                                                   min="0" max="255" value="10" required>
-                                            <small class="form-text text-muted">
-                                                Sadece bu değerden fazla farklılık gösteren pikseller keskinleştirilir.
-                                            </small>
-                                        </div>
-
-                                        <button type="submit" class="btn btn-primary">Unsharp Masking Uygula</button>
-                                    </form>
-                                </div>
-                            </div>
+                    <form asp-action="ProcessImage" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label for="imageFile" class="form-label">Görüntü Seçin</label>
+                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
                         </div>
-
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>Unsharp Masking Hakkında</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p>Unsharp Masking, görüntüleri keskinleştirmek için kullanılan güçlü bir tekniktir. 
-                                       Bu yöntem, orijinal görüntüden bulanık bir versiyonunu çıkararak kenarları ve detayları vurgular.</p>
-                                    
-                                    <h6>Parametreler:</h6>
-                                    <ul>
-                                        <li><strong>Keskinleştirme Miktarı:</strong> Efektin şiddetini belirler</li>
-                                        <li><strong>Bulanıklaştırma Yarıçapı:</strong> Etki alanının genişliğini kontrol eder</li>
-                                        <li><strong>Eşik Değeri:</strong> Hangi piksellerin keskinleştirileceğini belirler</li>
-                                    </ul>
-
-                                    <h6>Özellikler:</h6>
-                                    <ul>
-                                        <li>Kenarları ve detayları vurgular</li>
-                                        <li>Görüntü netliğini artırır</li>
-                                        <li>Gürültüyü kontrol eder</li>
-                                        <li>Profesyonel fotoğraf düzenlemede sıkça kullanılır</li>
-                                    </ul>
-                                </div>
-                            </div>
+                        <div class="form-group mb-3">
+                            <label for="amount" class="form-label">Keskinleştirme Miktarı (0.1 - 5.0)</label>
+                            <input type="number" class="form-control" id="amount" name="amount" value="1.5" min="0.1" max="5.0" step="0.1" required>
+                            <small class="form-text text-muted">Daha yüksek değerler daha keskin sonuçlar üretir.</small>
                         </div>
-                    </div>
+                        <div class="form-group mb-3">
+                            <label for="threshold" class="form-label">Eşik Değeri (0 - 255)</label>
+                            <input type="number" class="form-control" id="threshold" name="threshold" value="0" min="0" max="255" step="1" required>
+                            <small class="form-text text-muted">Sadece bu değerden fazla farklılık gösteren pikseller keskinleştirilir.</small>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-image"></i> Görüntüyü İşle
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -98,34 +45,34 @@
 
 @section Scripts {
     <script>
-        // Görüntü önizleme için JavaScript
-        document.getElementById('imageFile').addEventListener('change', function (e) {
+        // Font Awesome ikonları için CDN
+        if (!document.getElementById('fontawesome-css')) {
+            var link = document.createElement('link');
+            link.id = 'fontawesome-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+            document.head.appendChild(link);
+        }
+
+        // Görüntü önizleme
+        document.getElementById('imageFile').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
                 var reader = new FileReader();
-                reader.onload = function (e) {
-                    if (document.getElementById('preview')) {
-                        document.getElementById('preview').remove();
+                reader.onload = function(e) {
+                    var preview = document.createElement('img');
+                    preview.src = e.target.result;
+                    preview.className = 'img-fluid mt-3 rounded';
+                    preview.style.maxHeight = '300px';
+                    
+                    var previewContainer = document.querySelector('.form-group');
+                    var existingPreview = previewContainer.querySelector('img');
+                    if (existingPreview) {
+                        previewContainer.removeChild(existingPreview);
                     }
-                    var img = document.createElement('img');
-                    img.id = 'preview';
-                    img.src = e.target.result;
-                    img.className = 'img-fluid mt-3';
-                    document.querySelector('form').appendChild(img);
+                    previewContainer.appendChild(preview);
                 }
                 reader.readAsDataURL(e.target.files[0]);
             }
-        });
-
-        // Form kontrollerinin değer değişimlerini izle
-        ['amount', 'radius', 'threshold'].forEach(function(id) {
-            document.getElementById(id).addEventListener('change', function(e) {
-                var value = parseFloat(e.target.value);
-                var min = parseFloat(e.target.min);
-                var max = parseFloat(e.target.max);
-                
-                if (value < min) e.target.value = min;
-                if (value > max) e.target.value = max;
-            });
         });
     </script>
 } 

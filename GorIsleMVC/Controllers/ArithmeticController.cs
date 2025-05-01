@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
 namespace GorIsleMVC.Controllers
 {
     public class ArithmeticController : Controller
     {
-        private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly IWebHostEnvironment _environment;
 
-        public ArithmeticController(IWebHostEnvironment hostEnvironment)
+        public ArithmeticController(IWebHostEnvironment environment)
         {
-            _hostEnvironment = hostEnvironment;
+            _environment = environment;
         }
 
         public IActionResult Index()
@@ -19,114 +20,152 @@ namespace GorIsleMVC.Controllers
         }
 
         [HttpPost]
-        public IActionResult Upload(IFormFile firstImage, IFormFile secondImage, string operation)
+        public async Task<IActionResult> ProcessImages(IFormFile imageFile1, IFormFile imageFile2, string operation)
         {
-            if (firstImage == null || secondImage == null)
+            if (imageFile1 == null || imageFile2 == null || imageFile1.Length == 0 || imageFile2.Length == 0)
             {
                 TempData["Error"] = "Lütfen iki görüntü dosyası da seçin.";
                 return RedirectToAction("Index");
             }
 
-            var uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "uploads");
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
-
-            // İlk görüntüyü kaydet
-            var firstFileName = Guid.NewGuid().ToString() + "_" + firstImage.FileName;
-            var firstFilePath = Path.Combine(uploadsFolder, firstFileName);
-            using (var fileStream = new FileStream(firstFilePath, FileMode.Create))
+            try
             {
-                firstImage.CopyTo(fileStream);
-            }
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
 
-            // İkinci görüntüyü kaydet
-            var secondFileName = Guid.NewGuid().ToString() + "_" + secondImage.FileName;
-            var secondFilePath = Path.Combine(uploadsFolder, secondFileName);
-            using (var fileStream = new FileStream(secondFilePath, FileMode.Create))
-            {
-                secondImage.CopyTo(fileStream);
-            }
-
-            // Sonuç görüntüsünü oluştur
-            var resultFileName = $"result_{operation}_{Path.GetFileName(firstFileName)}";
-            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-
-            using (var firstBitmap = new Bitmap(firstFilePath))
-            using (var secondBitmap = new Bitmap(secondFilePath))
-            {
-                if (firstBitmap.Width != secondBitmap.Width || firstBitmap.Height != secondBitmap.Height)
+                // İlk görüntüyü yükle
+                var image1FileName = $"arithmetic1_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var image1Path = Path.Combine(uploadsFolder, image1FileName);
+                using (var stream1 = new MemoryStream())
                 {
-                    TempData["Error"] = "Görüntüler aynı boyutta olmalıdır.";
-                    return RedirectToAction("Index");
-                }
-
-                var resultBitmap = new Bitmap(firstBitmap.Width, firstBitmap.Height);
-
-                for (int x = 0; x < firstBitmap.Width; x++)
-                {
-                    for (int y = 0; y < firstBitmap.Height; y++)
+                    await imageFile1.CopyToAsync(stream1);
+                    stream1.Position = 0;
+                    using (var img1 = Image.FromStream(stream1))
                     {
-                        var firstPixel = firstBitmap.GetPixel(x, y);
-                        var secondPixel = secondBitmap.GetPixel(x, y);
-                        Color resultPixel;
-
-                        switch (operation.ToLower())
-                        {
-                            case "add":
-                                resultPixel = Color.FromArgb(
-                                    Math.Min(255, firstPixel.R + secondPixel.R),
-                                    Math.Min(255, firstPixel.G + secondPixel.G),
-                                    Math.Min(255, firstPixel.B + secondPixel.B));
-                                break;
-
-                            case "subtract":
-                                resultPixel = Color.FromArgb(
-                                    Math.Max(0, firstPixel.R - secondPixel.R),
-                                    Math.Max(0, firstPixel.G - secondPixel.G),
-                                    Math.Max(0, firstPixel.B - secondPixel.B));
-                                break;
-
-                            case "multiply":
-                                resultPixel = Color.FromArgb(
-                                    Math.Min(255, (firstPixel.R * secondPixel.R) / 255),
-                                    Math.Min(255, (firstPixel.G * secondPixel.G) / 255),
-                                    Math.Min(255, (firstPixel.B * secondPixel.B) / 255));
-                                break;
-
-                            case "divide":
-                                resultPixel = Color.FromArgb(
-                                    secondPixel.R == 0 ? 255 : Math.Min(255, (firstPixel.R * 255) / secondPixel.R),
-                                    secondPixel.G == 0 ? 255 : Math.Min(255, (firstPixel.G * 255) / secondPixel.G),
-                                    secondPixel.B == 0 ? 255 : Math.Min(255, (firstPixel.B * 255) / secondPixel.B));
-                                break;
-
-                            default:
-                                TempData["Error"] = "Geçersiz işlem.";
-                                return RedirectToAction("Index");
-                        }
-
-                        resultBitmap.SetPixel(x, y, resultPixel);
+                        img1.Save(image1Path, ImageFormat.Png);
                     }
                 }
 
-                resultBitmap.Save(resultPath, ImageFormat.Jpeg);
+                // İkinci görüntüyü yükle
+                var image2FileName = $"arithmetic2_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var image2Path = Path.Combine(uploadsFolder, image2FileName);
+                using (var stream2 = new MemoryStream())
+                {
+                    await imageFile2.CopyToAsync(stream2);
+                    stream2.Position = 0;
+                    using (var img2 = Image.FromStream(stream2))
+                    {
+                        img2.Save(image2Path, ImageFormat.Png);
+                    }
+                }
+
+                // Görüntüleri aynı boyuta getir ve işlemi uygula
+                using (var bitmap1 = new Bitmap(image1Path))
+                using (var bitmap2 = new Bitmap(image2Path))
+                {
+                    // En büyük boyutları bul
+                    int maxWidth = Math.Max(bitmap1.Width, bitmap2.Width);
+                    int maxHeight = Math.Max(bitmap1.Height, bitmap2.Height);
+
+                    // Her iki görüntüyü de aynı boyuta getir
+                    using (var resized1 = ResizeImage(bitmap1, maxWidth, maxHeight))
+                    using (var resized2 = ResizeImage(bitmap2, maxWidth, maxHeight))
+                    {
+                        var resultFileName = $"result_{DateTime.Now:yyyyMMddHHmmss}.png";
+                        var resultPath = Path.Combine(uploadsFolder, resultFileName);
+
+                        // Aritmetik işlemi uygula
+                        using (var resultImage = ApplyArithmeticOperation(resized1, resized2, operation))
+                        {
+                            resultImage.Save(resultPath, ImageFormat.Png);
+
+                            TempData["Image1"] = $"/uploads/{image1FileName}";
+                            TempData["Image2"] = $"/uploads/{image2FileName}";
+                            TempData["Result"] = $"/uploads/{resultFileName}";
+                            TempData["Operation"] = operation;
+                            TempData["ProcessType"] = "Görüntü Aritmetik İşlemi";
+                            TempData["OriginalSizes"] = $"Görüntü 1: {bitmap1.Width}x{bitmap1.Height}, Görüntü 2: {bitmap2.Width}x{bitmap2.Height}";
+                            TempData["FinalSize"] = $"İşlem Boyutu: {maxWidth}x{maxHeight}";
+                        }
+                    }
+                }
+
+                return View("Result");
             }
-
-            TempData["FirstImage"] = "/uploads/" + firstFileName;
-            TempData["SecondImage"] = "/uploads/" + secondFileName;
-            TempData["ResultImage"] = "/uploads/" + resultFileName;
-            TempData["Operation"] = operation;
-
-            return RedirectToAction("Result");
-        }
-
-        public IActionResult Result()
-        {
-            if (TempData["ResultImage"] == null)
+            catch (Exception ex)
             {
+                TempData["Error"] = "Görüntü işleme sırasında bir hata oluştu: " + ex.Message;
                 return RedirectToAction("Index");
             }
-            return View();
+        }
+
+        private Bitmap ResizeImage(Image image, int width, int height)
+        {
+            var result = new Bitmap(width, height);
+            using (var graphics = Graphics.FromImage(result))
+            {
+                // Yüksek kaliteli yeniden boyutlandırma ayarları
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.CompositingQuality = CompositingQuality.HighQuality;
+                graphics.SmoothingMode = SmoothingMode.HighQuality;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                // Görüntüyü yeni boyuta çiz
+                graphics.DrawImage(image, 0, 0, width, height);
+            }
+            return result;
+        }
+
+        private Bitmap ApplyArithmeticOperation(Bitmap image1, Bitmap image2, string operation)
+        {
+            int width = image1.Width;
+            int height = image1.Height;
+            Bitmap result = new Bitmap(width, height);
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Color pixel1 = image1.GetPixel(x, y);
+                    Color pixel2 = image2.GetPixel(x, y);
+
+                    int r, g, b;
+                    switch (operation.ToLower())
+                    {
+                        case "add":
+                            r = Math.Min(255, pixel1.R + pixel2.R);
+                            g = Math.Min(255, pixel1.G + pixel2.G);
+                            b = Math.Min(255, pixel1.B + pixel2.B);
+                            break;
+
+                        case "subtract":
+                            r = Math.Max(0, pixel1.R - pixel2.R);
+                            g = Math.Max(0, pixel1.G - pixel2.G);
+                            b = Math.Max(0, pixel1.B - pixel2.B);
+                            break;
+
+                        case "multiply":
+                            r = Math.Min(255, (pixel1.R * pixel2.R) / 255);
+                            g = Math.Min(255, (pixel1.G * pixel2.G) / 255);
+                            b = Math.Min(255, (pixel1.B * pixel2.B) / 255);
+                            break;
+
+                        case "average":
+                            r = (pixel1.R + pixel2.R) / 2;
+                            g = (pixel1.G + pixel2.G) / 2;
+                            b = (pixel1.B + pixel2.B) / 2;
+                            break;
+
+                        default:
+                            throw new ArgumentException("Geçersiz işlem türü");
+                    }
+
+                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
+                }
+            }
+
+            return result;
         }
     }
 } 
