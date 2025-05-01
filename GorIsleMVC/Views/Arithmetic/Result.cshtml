@@ -1,0 +1,43 @@
+@{
+    ViewData["Title"] = "İşlem Sonucu";
+}
+
+<div class="container mt-4">
+    <h2>Aritmetik İşlem Sonucu</h2>
+    <h4 class="mb-4">Uygulanan İşlem: @TempData["Operation"]</h4>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Birinci Görüntü</h5>
+                    <img src="@TempData["FirstImage"]" class="img-fluid" alt="Birinci Görüntü" />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">İkinci Görüntü</h5>
+                    <img src="@TempData["SecondImage"]" class="img-fluid" alt="İkinci Görüntü" />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Sonuç</h5>
+                    <img src="@TempData["ResultImage"]" class="img-fluid" alt="Sonuç Görüntüsü" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <a asp-action="Index" class="btn btn-primary">Yeni İşlem</a>
+        </div>
+    </div>
+</div> 

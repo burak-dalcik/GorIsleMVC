@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Histogram Sonuçları";
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Histogram verilerini TempData'dan al
+            var redHistogram = '@TempData["RedHistogram"]'.split(',').map(Number);
+            var greenHistogram = '@TempData["GreenHistogram"]'.split(',').map(Number);
+            var blueHistogram = '@TempData["BlueHistogram"]'.split(',').map(Number);
+            var grayHistogram = '@TempData["GrayHistogram"]'.split(',').map(Number);
+
+            // Histogram grafiklerini oluştur
+            createHistogram('redHistogram', redHistogram, 'Kırmızı Kanal Histogramı', 'rgb(255, 0, 0, 0.5)');
+            createHistogram('greenHistogram', greenHistogram, 'Yeşil Kanal Histogramı', 'rgb(0, 255, 0, 0.5)');
+            createHistogram('blueHistogram', blueHistogram, 'Mavi Kanal Histogramı', 'rgb(0, 0, 255, 0.5)');
+            createHistogram('grayHistogram', grayHistogram, 'Gri Tonlama Histogramı', 'rgb(128, 128, 128, 0.5)');
+        });
+
+        function createHistogram(canvasId, data, label, color) {
+            var ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from(Array(256).keys()),
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: color,
+                        borderColor: color.replace('0.5', '1'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}
+
+<div class="container mt-4">
+    <h2>Histogram Sonuçları</h2>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Orijinal Görüntü</h5>
+                    <img src="@TempData["ImagePath"]" class="img-fluid" alt="Orijinal Görüntü" />
+                </div>
+            </div>
+        </div>
+        @if (TempData["EqualizedImage"] != null)
+        {
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Histogram Eşitlenmiş Görüntü</h5>
+                        <img src="@TempData["EqualizedImage"]" class="img-fluid" alt="Eşitlenmiş Görüntü" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="redHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="greenHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="blueHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="grayHistogram"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <form asp-action="Equalize" method="post">
+                <input type="hidden" name="imagePath" value="@TempData["ImagePath"]" />
+                <button type="submit" class="btn btn-primary">Histogram Eşitleme Uygula</button>
+            </form>
+        </div>
+    </div>
+</div> 

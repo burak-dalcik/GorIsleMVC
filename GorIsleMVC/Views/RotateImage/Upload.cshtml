@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Görüntü Döndürme";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Görüntü Döndürme</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+                    <form asp-controller="RotateImage" asp-action="Upload" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label for="imageFile" class="form-label">Görsel Seçin</label>
+                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
+                            <div class="form-text">Desteklenen formatlar: JPG, PNG, GIF</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="angle" class="form-label">Döndürme Açısı (0-360 derece)</label>
+                            <input type="range" class="form-range" id="angle" name="angle" min="0" max="360" value="90" oninput="angleValue.value = angle.value">
+                            <output id="angleValue">90</output>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Döndürme İşlemini Uygula</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

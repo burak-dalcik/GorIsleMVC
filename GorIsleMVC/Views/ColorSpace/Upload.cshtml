@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = "Renk Uzayı Dönüşümleri";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Renk Uzayı Dönüşümleri</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+                    <form asp-controller="ColorSpace" asp-action="Upload" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label for="imageFile" class="form-label">Görsel Seçin</label>
+                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
+                            <div class="form-text">Desteklenen formatlar: JPG, PNG, GIF</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="colorSpace" class="form-label">Renk Uzayı</label>
+                            <select class="form-select" id="colorSpace" name="colorSpace">
+                                <option value="HSV">RGB → HSV</option>
+                                <option value="YUV">RGB → YUV</option>
+                            </select>
+                            <div class="form-text">Dönüştürmek istediğiniz renk uzayını seçin</div>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Renk Uzayı Dönüşümünü Uygula</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

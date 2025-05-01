@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Kontrast Sonucu";
+}
+
+<div class="container mt-4">
+    <h2>Kontrast İşlemi Sonucu</h2>
+    
+    @if (TempData["IsAutoContrast"] != null)
+    {
+        <h4 class="mb-4">Otomatik Kontrast Uygulandı</h4>
+    }
+    else
+    {
+        <h4 class="mb-4">Uygulanan Kontrast Faktörü: @TempData["ContrastFactor"]</h4>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Orijinal Görüntü</h5>
+                    <img src="@TempData["OriginalImage"]" class="img-fluid" alt="Orijinal Görüntü" />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Kontrast Ayarlı Görüntü</h5>
+                    <img src="@TempData["ContrastImage"]" class="img-fluid" alt="Kontrast Ayarlı Görüntü" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <a asp-action="Index" class="btn btn-primary">Yeni İşlem</a>
+        </div>
+    </div>
+</div> 

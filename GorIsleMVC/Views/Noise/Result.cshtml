@@ -1,0 +1,87 @@
+@{
+    ViewData["Title"] = "İşlem Sonucu";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-center">@ViewData["Title"]</h2>
+            @if (TempData["ProcessType"] != null)
+            {
+                <p class="text-center mb-0">
+                    @if (TempData["ProcessType"].ToString() == "noise")
+                    {
+                        <span>Uygulanan Gürültü Yoğunluğu: @TempData["Density"]</span>
+                    }
+                    else
+                    {
+                        <span>Uygulanan Filtre Boyutu: @TempData["FilterSize"]x@TempData["FilterSize"]</span>
+                    }
+                </p>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Orijinal Görüntü</h5>
+                            <img src="@TempData["OriginalImage"]" class="img-fluid rounded" alt="Orijinal Görüntü">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                @if (TempData["ProcessType"].ToString() == "noise")
+                                {
+                                    <span>Gürültü Eklenmiş Görüntü</span>
+                                }
+                                else
+                                {
+                                    <span>Filtrelenmiş Görüntü</span>
+                                }
+                            </h5>
+                            <img src="@TempData["ProcessedImage"]" class="img-fluid rounded" alt="İşlenmiş Görüntü">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col text-center">
+                    <a asp-action="Index" class="btn btn-primary me-2">Yeni Görüntü İşle</a>
+                    <a href="@TempData["ProcessedImage"]" class="btn btn-secondary" download>İşlenmiş Görüntüyü İndir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Uygulanan İşlem Hakkında</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["ProcessType"].ToString() == "noise")
+            {
+                <p>Salt & Pepper gürültüsü, @TempData["Density"] yoğunluğunda uygulandı. Bu işlem:</p>
+                <ul>
+                    <li>Rastgele konumlara siyah ve beyaz pikseller ekledi</li>
+                    <li>Orijinal görüntünün yaklaşık %@(Convert.ToDouble(TempData["Density"]) * 100)'i gürültü olarak değiştirildi</li>
+                    <li>Gürültü pikselleri eşit olasılıkla siyah veya beyaz olarak belirlendi</li>
+                </ul>
+            }
+            else
+            {
+                <p>Medyan filtresi, @TempData["FilterSize"]x@TempData["FilterSize"] boyutunda bir pencere kullanılarak uygulandı. Bu işlem:</p>
+                <ul>
+                    <li>Her piksel için @(Math.Pow(Convert.ToInt32(TempData["FilterSize"]), 2)) komşu piksel değeri kullanıldı</li>
+                    <li>Salt & Pepper gürültüsü etkili bir şekilde temizlendi</li>
+                    <li>Kenar detayları mümkün olduğunca korundu</li>
+                </ul>
+            }
+        </div>
+    </div>
+</div> 

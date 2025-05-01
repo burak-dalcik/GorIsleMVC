@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Yakınlaştırma/Uzaklaştırma Sonucu";
+    var processedImagePath = $"/uploads/{TempData["ProcessedImage"]}";
+    var originalImagePath = $"/uploads/{TempData["OriginalImage"]}";
+    var zoomFactor = TempData["ZoomFactor"];
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Yakınlaştırma/Uzaklaştırma Sonucu</h2>
+                    <p class="text-center mb-0">
+                        Yakınlaştırma Faktörü: @zoomFactor x
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="text-center mb-3">Orijinal Görsel</h4>
+                            <img src="@originalImagePath" class="img-fluid rounded shadow" alt="Orijinal Görsel">
+                        </div>
+                        <div class="col-md-6">
+                            <h4 class="text-center mb-3">Ölçeklenmiş Görsel</h4>
+                            <img src="@processedImagePath" class="img-fluid rounded shadow" alt="Ölçeklenmiş Görsel">
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a asp-controller="ZoomImage" asp-action="Upload" class="btn btn-primary">Yeni Görsel Yükle</a>
+                        <a href="@processedImagePath" class="btn btn-secondary mx-2" download>İşlenmiş Görseli İndir</a>
+                        <a href="@originalImagePath" class="btn btn-secondary" download>Orijinal Görseli İndir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "Mean Filter";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Mean Filter (Ortalama Filtre)</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <form asp-action="ApplyMeanFilter" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-4">
+                            <label for="imageFile" class="form-label">Görsel Seçin</label>
+                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
+                            <div class="form-text">Desteklenen formatlar: PNG, JPG, GIF</div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="kernelSize" class="form-label">Filtre Boyutu</label>
+                            <select class="form-select" id="kernelSize" name="kernelSize">
+                                <option value="3">3x3</option>
+                                <option value="5">5x5</option>
+                                <option value="7">7x7</option>
+                                <option value="9">9x9</option>
+                            </select>
+                            <div class="form-text">Daha büyük filtre boyutu daha fazla bulanıklaştırma etkisi yaratır.</div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                Mean Filter Uygula
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3>Mean Filter Hakkında</h3>
+                </div>
+                <div class="card-body">
+                    <p>Mean filter (ortalama filtre), görüntü işlemede kullanılan temel bir konvolüsyon işlemidir. Bu filtre:</p>
+                    <ul>
+                        <li>Görüntüdeki gürültüyü azaltır</li>
+                        <li>Görüntüyü yumuşatır</li>
+                        <li>Her pikselin değerini, komşu piksellerin ortalaması ile değiştirir</li>
+                        <li>Kenar detaylarını korumaz, genel bir bulanıklaştırma etkisi yaratır</li>
+                    </ul>
+                    <p>Filtre boyutu arttıkça bulanıklaştırma etkisi de artar. Gürültü azaltma için genellikle 3x3 veya 5x5 boyutları tercih edilir.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

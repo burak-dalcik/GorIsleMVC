@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "Kontrast İşlemleri";
+}
+
+<div class="container mt-4">
+    <h2>Görüntü Kontrast İşlemleri</h2>
+    
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Manuel Kontrast Ayarı</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label>Görüntü Seçin</label>
+                            <input type="file" name="imageFile" class="form-control-file" accept="image/*" required />
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label>Kontrast Faktörü (0.1 - 3.0)</label>
+                            <input type="number" name="contrastFactor" class="form-control" min="0.1" max="3.0" step="0.1" value="1.5" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Kontrast Ayarla</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Otomatik Kontrast Ayarı</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AutoContrast" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label>Görüntü Seçin</label>
+                            <input type="file" name="imageFile" class="form-control-file" accept="image/*" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Otomatik Kontrast Uygula</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

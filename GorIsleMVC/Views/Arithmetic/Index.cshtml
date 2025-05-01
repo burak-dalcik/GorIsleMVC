@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Aritmetik İşlemler";
+}
+
+<div class="container mt-4">
+    <h2>Görüntü Aritmetik İşlemleri</h2>
+    
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="form-group mb-3">
+                    <label>Birinci Görüntü</label>
+                    <input type="file" name="firstImage" class="form-control-file" accept="image/*" required />
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label>İkinci Görüntü</label>
+                    <input type="file" name="secondImage" class="form-control-file" accept="image/*" required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label>İşlem Seçin</label>
+                    <select name="operation" class="form-control" required>
+                        <option value="add">Toplama</option>
+                        <option value="subtract">Çıkarma</option>
+                        <option value="multiply">Çarpma</option>
+                        <option value="divide">Bölme</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">İşlemi Uygula</button>
+            </form>
+        </div>
+    </div>
+</div> 

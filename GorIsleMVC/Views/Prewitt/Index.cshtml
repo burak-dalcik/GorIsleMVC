@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Prewitt Kenar Bulma";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2>@ViewData["Title"]</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Görüntü Yükle</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form asp-action="ProcessImage" method="post" enctype="multipart/form-data">
+                                        <div class="form-group">
+                                            <label for="imageFile">Görüntü Seçin:</label>
+                                            <input type="file" class="form-control-file" id="imageFile" name="imageFile" accept="image/*" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary mt-3">Kenar Bulma Uygula</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Bilgi</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Prewitt operatörü, görüntüdeki kenarları tespit etmek için kullanılan bir kenar bulma operatörüdür. 
+                                       Bu operatör, yatay ve dikey yönlerdeki gradyanları hesaplayarak kenarları belirler.</p>
+                                    <ul>
+                                        <li>Yatay ve dikey yönlerde kenar tespiti yapar</li>
+                                        <li>3x3 komşuluk matrisini kullanır</li>
+                                        <li>Gürültüye karşı orta düzeyde hassasiyet gösterir</li>
+                                        <li>Hızlı ve etkili bir kenar bulma yöntemidir</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Görüntü önizleme için JavaScript
+        document.getElementById('imageFile').addEventListener('change', function (e) {
+            if (e.target.files && e.target.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    if (document.getElementById('preview')) {
+                        document.getElementById('preview').remove();
+                    }
+                    var img = document.createElement('img');
+                    img.id = 'preview';
+                    img.src = e.target.result;
+                    img.className = 'img-fluid mt-3';
+                    document.querySelector('form').appendChild(img);
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+    </script>
+} 

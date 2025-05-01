@@ -1,0 +1,142 @@
+@{
+    ViewData["Title"] = "Gürültü Ekleme ve Filtreleme";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2>@ViewData["Title"]</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <ul class="nav nav-tabs" id="noiseTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="add-noise-tab" data-toggle="tab" href="#add-noise" role="tab">
+                                Gürültü Ekle
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="remove-noise-tab" data-toggle="tab" href="#remove-noise" role="tab">
+                                Gürültü Filtrele
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-3" id="noiseTabContent">
+                        <div class="tab-pane fade show active" id="add-noise" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form asp-action="AddNoise" method="post" enctype="multipart/form-data">
+                                        <div class="form-group">
+                                            <label for="imageFile">Görüntü Seçin:</label>
+                                            <input type="file" class="form-control-file" id="imageFile" name="imageFile" accept="image/*" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="noiseDensity">Gürültü Yoğunluğu (0.0 - 1.0):</label>
+                                            <input type="number" class="form-control" id="noiseDensity" name="noiseDensity" 
+                                                   min="0.0" max="1.0" step="0.01" value="0.05" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Salt & Pepper Gürültüsü Ekle</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="remove-noise" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form asp-action="RemoveNoise" method="post" enctype="multipart/form-data">
+                                        <div class="form-group">
+                                            <label for="imageFile">Görüntü Seçin:</label>
+                                            <input type="file" class="form-control-file" id="imageFile2" name="imageFile" accept="image/*" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="filterSize">Filtre Boyutu:</label>
+                                            <select class="form-control" id="filterSize" name="filterSize" required>
+                                                <option value="3">3x3</option>
+                                                <option value="5">5x5</option>
+                                                <option value="7">7x7</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Medyan Filtresi Uygula</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Salt & Pepper Gürültüsü Hakkında</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Salt & Pepper gürültüsü, görüntüde rastgele siyah ve beyaz pikseller oluşturur. 
+                                       Bu tür gürültü, dijital görüntüleme sistemlerinde sıkça karşılaşılan bir sorundur.</p>
+                                    <ul>
+                                        <li>Rastgele dağılımlı siyah ve beyaz noktalar</li>
+                                        <li>Ayarlanabilir gürültü yoğunluğu</li>
+                                        <li>Gerçekçi gürültü simülasyonu</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Medyan Filtresi Hakkında</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Medyan filtresi, Salt & Pepper gürültüsünü gidermek için etkili bir yöntemdir. 
+                                       Filtre, her piksel için komşu piksellerin medyan değerini alarak çalışır.</p>
+                                    <ul>
+                                        <li>Farklı filtre boyutları (3x3, 5x5, 7x7)</li>
+                                        <li>Kenar koruma özelliği</li>
+                                        <li>Gürültü giderme performansı yüksek</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Görüntü önizleme için JavaScript
+        function setupImagePreview(inputId, formSelector) {
+            document.getElementById(inputId).addEventListener('change', function (e) {
+                if (e.target.files && e.target.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var previewId = 'preview-' + inputId;
+                        if (document.getElementById(previewId)) {
+                            document.getElementById(previewId).remove();
+                        }
+                        var img = document.createElement('img');
+                        img.id = previewId;
+                        img.src = e.target.result;
+                        img.className = 'img-fluid mt-3';
+                        document.querySelector(formSelector).appendChild(img);
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        }
+
+        setupImagePreview('imageFile', '#add-noise form');
+        setupImagePreview('imageFile2', '#remove-noise form');
+    </script>
+} 

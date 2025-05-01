@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Histogram İşlemleri";
+}
+
+<div class="container mt-4">
+    <h2>Histogram İşlemleri</h2>
+    
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Görüntü Seçin</label>
+                    <input type="file" name="imageFile" class="form-control-file" accept="image/*" required />
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Yükle ve Histogram Göster</button>
+            </form>
+        </div>
+    </div>
+</div> 
