@@ -1,0 +1,106 @@
+@{
+    ViewData["Title"] = "Morfolojik İşlemler";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Morfolojik İşlemler</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <form asp-action="ApplyMorphology" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-4">
+                            <label for="imageFile" class="form-label">Görsel Seçin</label>
+                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
+                            <div class="form-text">Desteklenen formatlar: PNG, JPG, GIF</div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="operation" class="form-label">Morfolojik İşlem</label>
+                            <select class="form-select" id="operation" name="operation" required>
+                                <option value="dilation">Genişleme (Dilation)</option>
+                                <option value="erosion">Aşınma (Erosion)</option>
+                                <option value="opening">Açma (Opening)</option>
+                                <option value="closing">Kapama (Closing)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="kernelSize" class="form-label d-flex justify-content-between">
+                                <span>Kernel Boyutu</span>
+                                <span id="kernelSizeValue" class="badge bg-primary">3x3</span>
+                            </label>
+                            <input type="range" 
+                                   class="form-range" 
+                                   id="kernelSize" 
+                                   name="kernelSize" 
+                                   min="3" 
+                                   max="9" 
+                                   step="2" 
+                                   value="3"
+                                   oninput="updateKernelSize(this.value)">
+                            <div class="d-flex justify-content-between">
+                                <small>3x3</small>
+                                <small>9x9</small>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                İşlemi Uygula
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3>Morfolojik İşlemler Hakkında</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Genişleme (Dilation)</h5>
+                        <p>Görüntüdeki nesneleri genişletir, küçük boşlukları doldurur ve nesne sınırlarını yumuşatır.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Aşınma (Erosion)</h5>
+                        <p>Görüntüdeki nesneleri küçültür, ince detayları kaldırır ve nesneleri ayırır.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Açma (Opening)</h5>
+                        <p>Önce aşınma, sonra genişleme uygulanır. Küçük gürültüleri kaldırır ve nesne sınırlarını yumuşatır.</p>
+                    </div>
+
+                    <div>
+                        <h5>Kapama (Closing)</h5>
+                        <p>Önce genişleme, sonra aşınma uygulanır. Küçük boşlukları doldurur ve nesne sınırlarını birleştirir.</p>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i> İpucu: Kernel boyutu işlemin etki alanını belirler. Daha büyük kernel boyutu daha belirgin etkiler oluşturur.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateKernelSize(value) {
+            document.getElementById('kernelSizeValue').textContent = value + 'x' + value;
+        }
+    </script>
+} 
