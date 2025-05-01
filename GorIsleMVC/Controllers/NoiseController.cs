@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+
 
 namespace GorIsleMVC.Controllers
 {
@@ -162,11 +167,16 @@ namespace GorIsleMVC.Controllers
             Bitmap result = new Bitmap(width, height);
             int offset = filterSize / 2;
 
+            // Ana görüntü bölgesi için medyan filtresi uygula
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
-                    var neighbors = new List<int>();
+                    // Her renk kanalı için ayrı diziler oluştur
+                    int[] redValues = new int[filterSize * filterSize];
+                    int[] greenValues = new int[filterSize * filterSize];
+                    int[] blueValues = new int[filterSize * filterSize];
+                    int index = 0;
 
                     // Komşu pikselleri topla
                     for (int i = -offset; i <= offset; i++)
@@ -174,38 +184,158 @@ namespace GorIsleMVC.Controllers
                         for (int j = -offset; j <= offset; j++)
                         {
                             Color pixel = original.GetPixel(x + i, y + j);
-                            int gray = (int)((pixel.R + pixel.G + pixel.B) / 3.0);
-                            neighbors.Add(gray);
+                            redValues[index] = pixel.R;
+                            greenValues[index] = pixel.G;
+                            blueValues[index] = pixel.B;
+                            index++;
                         }
                     }
 
-                    // Medyan değeri hesapla
-                    neighbors.Sort();
-                    int median = neighbors[neighbors.Count / 2];
-                    result.SetPixel(x, y, Color.FromArgb(median, median, median));
+                    // Her kanal için medyan değeri bul
+                    int medianR = GetMedian(redValues);
+                    int medianG = GetMedian(greenValues);
+                    int medianB = GetMedian(blueValues);
+
+                    result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
                 }
             }
 
-            // Kenar pikselleri kopyala
+            // Kenarları işle
+            ProcessImageEdges(original, result, filterSize);
+
+            return result;
+        }
+
+        private void ProcessImageEdges(Bitmap original, Bitmap result, int filterSize)
+        {
+            int width = original.Width;
+            int height = original.Height;
+            int offset = filterSize / 2;
+
+            // Üst ve alt kenarlar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < offset; y++)
                 {
-                    result.SetPixel(x, y, original.GetPixel(x, y));
-                    result.SetPixel(x, height - 1 - y, original.GetPixel(x, height - 1 - y));
+                    // Üst kenar için değerleri topla
+                    int[] redValues = new int[(offset + y + 1) * (2 * offset + 1)];
+                    int[] greenValues = new int[(offset + y + 1) * (2 * offset + 1)];
+                    int[] blueValues = new int[(offset + y + 1) * (2 * offset + 1)];
+                    int index = 0;
+
+                    for (int i = -Math.Min(x, offset); i <= Math.Min(width - 1 - x, offset); i++)
+                    {
+                        for (int j = 0; j <= offset + y; j++)
+                        {
+                            if (x + i >= 0 && x + i < width && j >= 0 && j < height)
+                            {
+                                Color pixel = original.GetPixel(x + i, j);
+                                redValues[index] = pixel.R;
+                                greenValues[index] = pixel.G;
+                                blueValues[index] = pixel.B;
+                                index++;
+                            }
+                        }
+                    }
+
+                    // Dizileri gerçek boyuta küçült
+                    Array.Resize(ref redValues, index);
+                    Array.Resize(ref greenValues, index);
+                    Array.Resize(ref blueValues, index);
+
+                    // Medyan değerleri hesapla ve uygula
+                    if (index > 0)
+                    {
+                        int medianR = GetMedian(redValues);
+                        int medianG = GetMedian(greenValues);
+                        int medianB = GetMedian(blueValues);
+
+                        // Üst kenar için uygula
+                        result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
+
+                        // Alt kenar için uygula
+                        result.SetPixel(x, height - 1 - y, Color.FromArgb(medianR, medianG, medianB));
+                    }
                 }
             }
 
-            for (int y = 0; y < height; y++)
+            // Sol ve sağ kenarlar
+            for (int y = offset; y < height - offset; y++)
             {
                 for (int x = 0; x < offset; x++)
                 {
-                    result.SetPixel(x, y, original.GetPixel(x, y));
-                    result.SetPixel(width - 1 - x, y, original.GetPixel(width - 1 - x, y));
+                    // Sol kenar için değerleri topla
+                    int[] redValues = new int[(offset + x + 1) * (2 * offset + 1)];
+                    int[] greenValues = new int[(offset + x + 1) * (2 * offset + 1)];
+                    int[] blueValues = new int[(offset + x + 1) * (2 * offset + 1)];
+                    int index = 0;
+
+                    for (int i = 0; i <= offset + x; i++)
+                    {
+                        for (int j = -offset; j <= offset; j++)
+                        {
+                            if (i >= 0 && i < width && y + j >= 0 && y + j < height)
+                            {
+                                Color pixel = original.GetPixel(i, y + j);
+                                redValues[index] = pixel.R;
+                                greenValues[index] = pixel.G;
+                                blueValues[index] = pixel.B;
+                                index++;
+                            }
+                        }
+                    }
+
+                    // Dizileri gerçek boyuta küçült
+                    Array.Resize(ref redValues, index);
+                    Array.Resize(ref greenValues, index);
+                    Array.Resize(ref blueValues, index);
+
+                    // Medyan değerleri hesapla ve uygula
+                    if (index > 0)
+                    {
+                        int medianR = GetMedian(redValues);
+                        int medianG = GetMedian(greenValues);
+                        int medianB = GetMedian(blueValues);
+
+                        // Sol kenar için uygula
+                        result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
+
+                        // Sağ kenar için uygula
+                        result.SetPixel(width - 1 - x, y, Color.FromArgb(medianR, medianG, medianB));
+                    }
+                }
+            }
+        }
+
+        private int GetMedian(int[] values)
+        {
+            // Diziyi küçükten büyüğe sırala (Bubble Sort)
+            int n = values.Length;
+            for (int i = 0; i < n - 1; i++)
+            {
+                for (int j = 0; j < n - i - 1; j++)
+                {
+                    if (values[j] > values[j + 1])
+                    {
+                        // Değerleri değiştir
+                        int temp = values[j];
+                        values[j] = values[j + 1];
+                        values[j + 1] = temp;
+                    }
                 }
             }
 
-            return result;
+            // Medyan değeri hesapla
+            if (n % 2 == 0)
+            {
+                // Çift sayıda eleman varsa ortadaki iki sayının ortalamasını al
+                return (values[n / 2 - 1] + values[n / 2]) / 2;
+            }
+            else
+            {
+                // Tek sayıda eleman varsa ortadaki sayıyı al
+                return values[n / 2];
+            }
         }
     }
 } 

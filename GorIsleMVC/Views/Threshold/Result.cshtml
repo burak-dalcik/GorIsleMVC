@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Eşikleme Sonucu";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Eşikleme Sonucu</h2>
+                    <p class="text-center mb-0">Uygulanan Eşik Değeri: <span class="badge bg-primary">@TempData["Threshold"]</span></p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="text-center mb-0">Orijinal Görüntü</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    @if (TempData["OriginalImage"] != null)
+                                    {
+                                        <img src="@TempData["OriginalImage"]" class="img-fluid" alt="Orijinal Görüntü">
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="text-center mb-0">İşlenmiş Görüntü</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    @if (TempData["ProcessedImage"] != null)
+                                    {
+                                        <img src="@TempData["ProcessedImage"]" class="img-fluid" alt="İşlenmiş Görüntü">
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a asp-action="Index" class="btn btn-primary">
+                            <i class="bi bi-arrow-left"></i> Yeni Görüntü İşle
+                        </a>
+                        @if (TempData["ProcessedImage"] != null)
+                        {
+                            <a href="@TempData["ProcessedImage"]" class="btn btn-success ms-2" download>
+                                <i class="bi bi-download"></i> İşlenmiş Görüntüyü İndir
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

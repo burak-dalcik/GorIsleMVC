@@ -18,15 +18,15 @@
                     }
 
                     <ul class="nav nav-tabs" id="noiseTabs" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="add-noise-tab" data-toggle="tab" href="#add-noise" role="tab">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="add-noise-tab" data-bs-toggle="tab" data-bs-target="#add-noise" type="button" role="tab">
                                 Gürültü Ekle
-                            </a>
+                            </button>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="remove-noise-tab" data-toggle="tab" href="#remove-noise" role="tab">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="remove-noise-tab" data-bs-toggle="tab" data-bs-target="#remove-noise" type="button" role="tab">
                                 Gürültü Filtrele
-                            </a>
+                            </button>
                         </li>
                     </ul>
 
@@ -35,12 +35,12 @@
                             <div class="card">
                                 <div class="card-body">
                                     <form asp-action="AddNoise" method="post" enctype="multipart/form-data">
-                                        <div class="form-group">
-                                            <label for="imageFile">Görüntü Seçin:</label>
-                                            <input type="file" class="form-control-file" id="imageFile" name="imageFile" accept="image/*" required>
+                                        <div class="form-group mb-3">
+                                            <label for="imageFile" class="form-label">Görüntü Seçin:</label>
+                                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="noiseDensity">Gürültü Yoğunluğu (%):</label>
+                                        <div class="form-group mb-3">
+                                            <label for="noiseDensity" class="form-label">Gürültü Yoğunluğu (%):</label>
                                             <input type="number" class="form-control" id="noiseDensity" name="noiseDensity" 
                                                    min="0" max="100" step="1" value="5" required>
                                             <small class="form-text text-muted">
@@ -57,12 +57,12 @@
                             <div class="card">
                                 <div class="card-body">
                                     <form asp-action="RemoveNoise" method="post" enctype="multipart/form-data">
-                                        <div class="form-group">
-                                            <label for="imageFile">Görüntü Seçin:</label>
-                                            <input type="file" class="form-control-file" id="imageFile2" name="imageFile" accept="image/*" required>
+                                        <div class="form-group mb-3">
+                                            <label for="imageFile2" class="form-label">Görüntü Seçin:</label>
+                                            <input type="file" class="form-control" id="imageFile2" name="imageFile" accept="image/*" required>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="filterSize">Filtre Boyutu:</label>
+                                        <div class="form-group mb-3">
+                                            <label for="filterSize" class="form-label">Filtre Boyutu:</label>
                                             <select class="form-control" id="filterSize" name="filterSize" required>
                                                 <option value="3">3x3</option>
                                                 <option value="5">5x5</option>
