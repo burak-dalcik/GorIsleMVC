@@ -1,8 +1,71 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "GÖRİŞLE - Görüntü İşleme Projesi";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-5">
+    <div class="row align-items-center">
+        <!-- Sol -->
+        <div class="col-md-6 text-center border-end">
+            <img src="https://www.selcuk.edu.tr/img/logo_tr.png" alt="Selçuk Üniversitesi Logo" class="img-fluid mb-4" style="max-width: 200px;">
+            <h2 class="mb-4">SELÇUK ÜNİVERSİTESİ</h2>
+            <h3 class="mb-3">Teknoloji Fakültesi</h3>
+            <div class="mt-4">
+                <h4>GÖRÜNTÜ İŞLEME DERSİ</h4>
+                <h5>Final Projesi</h5>
+            </div>
+            <div class="mt-4">
+                <h3 class="text-primary">GÖRİŞLE</h3>
+                <p class="text-muted">Görüntü İşleme İşlemlerini Gerçekleştiren Web Uygulaması</p>
+            </div>
+        </div>
+
+        <!-- Sağ  -->
+        <div class="col-md-6 text-center">
+            <div class="card">
+                <div class="card-body">                    
+                    <h4 class="card-title mb-4">Öğrenci</h4>
+                    <div class="student-info">
+                        <h3>ÖMER BURAK DALÇIK</h3>
+                        <hr class="my-4">
+                        <div class="text-start">
+                            <p><strong>Bölüm:</strong> Bilgisayar Mühendisliği</p>
+                            <p><strong>Öğretim Üyesi:</strong> Dr. Öğr. Üyesi İlkay ÇINAR</p>                            
+                            <p><strong>Dönem:</strong> 2024-2025 Bahar</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alt Bilgi -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Menüden yapmak istediğiniz görüntü işleme operasyonunu seçebilirsiniz.
+                </h5>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .student-info {
+        padding: 20px;
+    }
+    .border-end {
+        border-right: 2px solid #dee2e6;
+    }
+    h2, h3, h4, h5 {
+        color: #2c3e50;
+    }
+    .text-primary {
+        color: #1a5f7a !important;
+    }
+    .card {
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>

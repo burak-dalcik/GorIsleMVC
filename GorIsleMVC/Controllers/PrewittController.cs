@@ -75,7 +75,7 @@ namespace GorIsleMVC.Controllers
             int height = original.Height;
             Bitmap result = new Bitmap(width, height);
 
-            // Prewitt operatör matrisleri
+
             int[,] prewittX = new int[,] { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } };
             int[,] prewittY = new int[,] { { -1, -1, -1 }, { 0, 0, 0 }, { 1, 1, 1 } };
 
@@ -86,7 +86,7 @@ namespace GorIsleMVC.Controllers
                     int gx = 0;
                     int gy = 0;
 
-                    // 3x3 komşuluk için gradyan hesaplama
+
                     for (int i = -1; i <= 1; i++)
                     {
                         for (int j = -1; j <= 1; j++)

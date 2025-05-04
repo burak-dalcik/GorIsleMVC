@@ -87,14 +87,12 @@ namespace GorIsleMVC.Controllers
             var resultBitmap = new Bitmap(width, height);
             int offset = kernelSize / 2;
 
-            // Her kanal için ayrı işlem yap
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
                     int maxR = 0, maxG = 0, maxB = 0;
 
-                    // Kernel içindeki pikselleri kontrol et
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
@@ -120,14 +118,12 @@ namespace GorIsleMVC.Controllers
             var resultBitmap = new Bitmap(width, height);
             int offset = kernelSize / 2;
 
-            // Her kanal için ayrı işlem yap
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
                     int minR = 255, minG = 255, minB = 255;
 
-                    // Kernel içindeki pikselleri kontrol et
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
@@ -148,19 +144,16 @@ namespace GorIsleMVC.Controllers
 
         private Bitmap ApplyColorOpening(Bitmap sourceBitmap, int kernelSize)
         {
-            // Açma = Aşınma + Genişleme
             var erodedImage = ApplyColorErosion(sourceBitmap, kernelSize);
             return ApplyColorDilation(erodedImage, kernelSize);
         }
 
         private Bitmap ApplyColorClosing(Bitmap sourceBitmap, int kernelSize)
         {
-            // Kapama = Genişleme + Aşınma
             var dilatedImage = ApplyColorDilation(sourceBitmap, kernelSize);
             return ApplyColorErosion(dilatedImage, kernelSize);
         }
 
-        // Mevcut siyah-beyaz işlem metodları
         private Bitmap ApplyDilation(Bitmap sourceBitmap, int kernelSize)
         {
             int width = sourceBitmap.Width;
@@ -168,23 +161,20 @@ namespace GorIsleMVC.Controllers
             var resultBitmap = new Bitmap(width, height);
             int offset = kernelSize / 2;
 
-            // Önce görüntüyü ikili (binary) formata çevir
             var binaryBitmap = ConvertToBinary(sourceBitmap);
 
-            // Genişleme işlemi
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
                     bool hasWhitePixel = false;
 
-                    // Kernel içindeki pikselleri kontrol et
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
                         {
                             var pixel = binaryBitmap.GetPixel(x + i, y + j);
-                            if (pixel.R == 255) // Beyaz piksel bulundu
+                            if (pixel.R == 255) 
                             {
                                 hasWhitePixel = true;
                                 break;
@@ -207,7 +197,6 @@ namespace GorIsleMVC.Controllers
             var resultBitmap = new Bitmap(width, height);
             int offset = kernelSize / 2;
 
-            // Önce görüntüyü ikili (binary) formata çevir
             var binaryBitmap = ConvertToBinary(sourceBitmap);
 
             // Aşınma işlemi
@@ -217,13 +206,12 @@ namespace GorIsleMVC.Controllers
                 {
                     bool allWhitePixels = true;
 
-                    // Kernel içindeki pikselleri kontrol et
                     for (int i = -offset; i <= offset && allWhitePixels; i++)
                     {
                         for (int j = -offset; j <= offset && allWhitePixels; j++)
                         {
                             var pixel = binaryBitmap.GetPixel(x + i, y + j);
-                            if (pixel.R == 0) // Siyah piksel bulundu
+                            if (pixel.R == 0) 
                             {
                                 allWhitePixels = false;
                                 break;
@@ -240,14 +228,12 @@ namespace GorIsleMVC.Controllers
 
         private Bitmap ApplyOpening(Bitmap sourceBitmap, int kernelSize)
         {
-            // Açma = Aşınma + Genişleme
             var erodedImage = ApplyErosion(sourceBitmap, kernelSize);
             return ApplyDilation(erodedImage, kernelSize);
         }
 
         private Bitmap ApplyClosing(Bitmap sourceBitmap, int kernelSize)
         {
-            // Kapama = Genişleme + Aşınma
             var dilatedImage = ApplyDilation(sourceBitmap, kernelSize);
             return ApplyErosion(dilatedImage, kernelSize);
         }

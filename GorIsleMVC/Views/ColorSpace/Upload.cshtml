@@ -16,17 +16,17 @@
                             @TempData["Error"]
                         </div>
                     }
-                    <form asp-controller="ColorSpace" asp-action="Upload" method="post" enctype="multipart/form-data">
+                    <form asp-controller="ColorSpace" asp-action="Convert" method="post" enctype="multipart/form-data">
                         <div class="form-group mb-3">
                             <label for="imageFile" class="form-label">Görsel Seçin</label>
                             <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
                             <div class="form-text">Desteklenen formatlar: JPG, PNG, GIF</div>
                         </div>
                         <div class="form-group mb-3">
-                            <label for="colorSpace" class="form-label">Renk Uzayı</label>
-                            <select class="form-select" id="colorSpace" name="colorSpace">
-                                <option value="HSV">RGB → HSV</option>
-                                <option value="YUV">RGB → YUV</option>
+                            <label for="conversionType" class="form-label">Renk Uzayı</label>
+                            <select class="form-select" id="conversionType" name="conversionType">
+                                <option value="RGB->YUV">RGB → YUV</option>
+                                <option value="YUV->RGB">YUV → RGB</option>
                             </select>
                             <div class="form-text">Dönüştürmek istediğiniz renk uzayını seçin</div>
                         </div>

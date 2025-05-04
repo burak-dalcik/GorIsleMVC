@@ -76,7 +76,7 @@
                     img.style.maxHeight = '300px';
                     previewDiv.appendChild(img);
                     
-                    // Boyut bilgisini ekle
+  
                     img.onload = function() {
                         const sizeInfo = document.createElement('p');
                         sizeInfo.className = 'text-muted mt-2 mb-0';
@@ -88,7 +88,6 @@
             }
         });
 
-        // Kontrast değeri senkronizasyonu
         const contrastRange = document.getElementById('contrastRange');
         const contrastInput = document.getElementById('contrast');
 

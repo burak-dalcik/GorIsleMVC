@@ -33,7 +33,6 @@ namespace GorIsleMVC.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Yüzdeyi ondalığa çevir (1-100 -> 0.01-1.0)
             double densityValue = Math.Max(0, Math.Min(100, noiseDensity)) / 100.0;
 
             try
@@ -167,12 +166,11 @@ namespace GorIsleMVC.Controllers
             Bitmap result = new Bitmap(width, height);
             int offset = filterSize / 2;
 
-            // Ana görüntü bölgesi için medyan filtresi uygula
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
-                    // Her renk kanalı için ayrı diziler oluştur
+    
                     int[] redValues = new int[filterSize * filterSize];
                     int[] greenValues = new int[filterSize * filterSize];
                     int[] blueValues = new int[filterSize * filterSize];
@@ -191,7 +189,6 @@ namespace GorIsleMVC.Controllers
                         }
                     }
 
-                    // Her kanal için medyan değeri bul
                     int medianR = GetMedian(redValues);
                     int medianG = GetMedian(greenValues);
                     int medianB = GetMedian(blueValues);
@@ -200,7 +197,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // Kenarları işle
             ProcessImageEdges(original, result, filterSize);
 
             return result;
@@ -212,12 +208,10 @@ namespace GorIsleMVC.Controllers
             int height = original.Height;
             int offset = filterSize / 2;
 
-            // Üst ve alt kenarlar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < offset; y++)
                 {
-                    // Üst kenar için değerleri topla
                     int[] redValues = new int[(offset + y + 1) * (2 * offset + 1)];
                     int[] greenValues = new int[(offset + y + 1) * (2 * offset + 1)];
                     int[] blueValues = new int[(offset + y + 1) * (2 * offset + 1)];
@@ -238,22 +232,18 @@ namespace GorIsleMVC.Controllers
                         }
                     }
 
-                    // Dizileri gerçek boyuta küçült
                     Array.Resize(ref redValues, index);
                     Array.Resize(ref greenValues, index);
                     Array.Resize(ref blueValues, index);
 
-                    // Medyan değerleri hesapla ve uygula
                     if (index > 0)
                     {
                         int medianR = GetMedian(redValues);
                         int medianG = GetMedian(greenValues);
                         int medianB = GetMedian(blueValues);
 
-                        // Üst kenar için uygula
                         result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
 
-                        // Alt kenar için uygula
                         result.SetPixel(x, height - 1 - y, Color.FromArgb(medianR, medianG, medianB));
                     }
                 }
@@ -290,7 +280,6 @@ namespace GorIsleMVC.Controllers
                     Array.Resize(ref greenValues, index);
                     Array.Resize(ref blueValues, index);
 
-                    // Medyan değerleri hesapla ve uygula
                     if (index > 0)
                     {
                         int medianR = GetMedian(redValues);
@@ -309,7 +298,6 @@ namespace GorIsleMVC.Controllers
 
         private int GetMedian(int[] values)
         {
-            // Diziyi küçükten büyüğe sırala (Bubble Sort)
             int n = values.Length;
             for (int i = 0; i < n - 1; i++)
             {
@@ -317,7 +305,6 @@ namespace GorIsleMVC.Controllers
                 {
                     if (values[j] > values[j + 1])
                     {
-                        // Değerleri değiştir
                         int temp = values[j];
                         values[j] = values[j + 1];
                         values[j + 1] = temp;
@@ -325,7 +312,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // Medyan değeri hesapla
             if (n % 2 == 0)
             {
                 // Çift sayıda eleman varsa ortadaki iki sayının ortalamasını al

@@ -76,10 +76,8 @@ namespace GorIsleMVC.Controllers
             int height = original.Height;
             Bitmap result = new Bitmap(width, height);
 
-            // Kontrast faktörünü hesapla
             double factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
-            // Lookup tablosu oluştur
             int[] lookupTable = new int[256];
             for (int i = 0; i < 256; i++)
             {
@@ -87,7 +85,6 @@ namespace GorIsleMVC.Controllers
                 lookupTable[i] = (int)Math.Min(255, Math.Max(0, temp));
             }
 
-            // Her piksele kontrast ayarı uygula
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)

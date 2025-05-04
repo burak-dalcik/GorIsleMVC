@@ -18,6 +18,11 @@ namespace GorIsleMVC.Controllers
             return View();
         }
 
+        public IActionResult Upload()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Convert(IFormFile imageFile, string conversionType)
         {

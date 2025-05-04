@@ -113,7 +113,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // Sonuç görüntüsü
             Bitmap result = new Bitmap(width, height);
 
             // Unsharp Mask uygula
@@ -124,7 +123,7 @@ namespace GorIsleMVC.Controllers
                     Color originalPixel = original.GetPixel(x, y);
                     Color blurredPixel = blurred.GetPixel(x, y);
 
-                    // Her kanal için mask hesapla
+                    
                     int diffR = originalPixel.R - blurredPixel.R;
                     int diffG = originalPixel.G - blurredPixel.G;
                     int diffB = originalPixel.B - blurredPixel.B;

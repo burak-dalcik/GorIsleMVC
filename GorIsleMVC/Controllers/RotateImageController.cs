@@ -50,21 +50,21 @@ namespace GorIsleMVC.Controllers
 
                 using (var originalImage = Image.FromFile(tempPath))
                 {
-                    // Orijinal görüntüyü kaydet
+   
                     originalImage.Save(originalPath, ImageFormat.Jpeg);
 
-                    // Döndürülmüş görüntü oluştur
+  
                     using (var rotatedImage = new Bitmap(originalImage.Width, originalImage.Height))
                     {
                         using (Graphics g = Graphics.FromImage(rotatedImage))
                         {
-                            // Döndürme merkezini ayarla
+                      
                             g.TranslateTransform(rotatedImage.Width / 2, rotatedImage.Height / 2);
-                            // Döndürme işlemini uygula
+   
                             g.RotateTransform(angle);
-                            // Merkezi geri al
+               
                             g.TranslateTransform(-rotatedImage.Width / 2, -rotatedImage.Height / 2);
-                            // Orijinal görüntüyü çiz
+                            
                             g.DrawImage(originalImage, Point.Empty);
                         }
 

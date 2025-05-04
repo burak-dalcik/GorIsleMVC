@@ -41,7 +41,7 @@ namespace GorIsleMVC.Controllers
 
             using (var bitmap = new Bitmap(filePath))
             {
-                // Histogram verilerini hesapla
+
                 int[] redHistogram = new int[256];
                 int[] greenHistogram = new int[256];
                 int[] blueHistogram = new int[256];
@@ -60,7 +60,7 @@ namespace GorIsleMVC.Controllers
                     }
                 }
 
-                // Histogram verilerini TempData'ya kaydet
+
                 TempData["RedHistogram"] = string.Join(",", redHistogram);
                 TempData["GreenHistogram"] = string.Join(",", greenHistogram);
                 TempData["BlueHistogram"] = string.Join(",", blueHistogram);
@@ -95,12 +95,11 @@ namespace GorIsleMVC.Controllers
 
             using (var bitmap = new Bitmap(fullPath))
             {
-                // Histogram eşitleme işlemi
+                // histogram eşitleme 
                 int[] histogram = new int[256];
                 int[] cdf = new int[256];
                 int totalPixels = bitmap.Width * bitmap.Height;
 
-                // Gri tonlamalı histogram hesapla
                 for (int i = 0; i < bitmap.Width; i++)
                 {
                     for (int j = 0; j < bitmap.Height; j++)
@@ -111,14 +110,14 @@ namespace GorIsleMVC.Controllers
                     }
                 }
 
-                // CDF hesapla
+     
                 cdf[0] = histogram[0];
                 for (int i = 1; i < 256; i++)
                 {
                     cdf[i] = cdf[i - 1] + histogram[i];
                 }
 
-                // Yeni görüntüyü oluştur
+                // görüntüyü oluştur
                 Bitmap equalizedImage = new Bitmap(bitmap.Width, bitmap.Height);
                 for (int i = 0; i < bitmap.Width; i++)
                 {

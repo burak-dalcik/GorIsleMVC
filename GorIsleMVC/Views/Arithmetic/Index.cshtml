@@ -65,7 +65,7 @@
 
 @section Scripts {
     <script>
-        // Font Awesome ikonları için CDN
+
         if (!document.getElementById('fontawesome-css')) {
             var link = document.createElement('link');
             link.id = 'fontawesome-css';
@@ -74,7 +74,6 @@
             document.head.appendChild(link);
         }
 
-        // Görüntü önizleme fonksiyonu
         function setupImagePreview(inputId, previewId) {
             document.getElementById(inputId).addEventListener('change', function(e) {
                 const previewDiv = document.getElementById(previewId);
@@ -88,7 +87,6 @@
                         img.style.maxHeight = '200px';
                         previewDiv.appendChild(img);
                         
-                        // Boyut bilgisini ekle
                         img.onload = function() {
                             const sizeInfo = document.createElement('p');
                             sizeInfo.className = 'text-muted mt-2 mb-0';

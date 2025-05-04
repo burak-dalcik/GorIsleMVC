@@ -40,7 +40,7 @@ namespace GorIsleMVC.Controllers
             var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-            // Geçici dosya oluştur
+
             var tempPath = Path.GetTempFileName();
             try
             {
@@ -49,12 +49,12 @@ namespace GorIsleMVC.Controllers
                     await imageFile.CopyToAsync(stream);
                 }
 
-                // Orijinal görüntüyü kaydet
+
                 using (var originalImage = Image.FromFile(tempPath))
                 {
                     originalImage.Save(originalPath, ImageFormat.Jpeg);
 
-                    // Gri tonlamalı görüntü oluştur
+
                     using (var grayImage = new Bitmap(originalImage.Width, originalImage.Height))
                     {
                         for (int x = 0; x < originalImage.Width; x++)

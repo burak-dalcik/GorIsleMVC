@@ -50,10 +50,10 @@ namespace GorIsleMVC.Controllers
 
                 using (var originalImage = Image.FromFile(tempPath))
                 {
-                    // Orijinal görüntüyü kaydet
+             
                     originalImage.Save(originalPath, ImageFormat.Jpeg);
 
-                    // İkili (binary) görüntü oluştur
+       
                     using (var binaryImage = new Bitmap(originalImage.Width, originalImage.Height))
                     {
                         for (int x = 0; x < originalImage.Width; x++)
@@ -61,9 +61,7 @@ namespace GorIsleMVC.Controllers
                             for (int y = 0; y < originalImage.Height; y++)
                             {
                                 var pixel = ((Bitmap)originalImage).GetPixel(x, y);
-                                // Önce griye çevir
                                 var grayValue = (byte)((pixel.R + pixel.G + pixel.B) / 3);
-                                // Eşik değerine göre siyah veya beyaz yap
                                 var binaryValue = (byte)(grayValue > threshold ? 255 : 0);
                                 binaryImage.SetPixel(x, y, Color.FromArgb(pixel.A, binaryValue, binaryValue, binaryValue));
                             }

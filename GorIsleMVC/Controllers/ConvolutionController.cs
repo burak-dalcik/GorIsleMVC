@@ -53,10 +53,8 @@ namespace GorIsleMVC.Controllers
 
                         using (var bitmap = new Bitmap(originalImage))
                         {
-                            // Mean filter uygula
                             var resultBitmap = ApplyMean(bitmap, kernelSize);
 
-                            // Sonucu kaydet
                             var resultFileName = $"mean_filter_{kernelSize}x{kernelSize}_{DateTime.Now:yyyyMMddHHmmss}.png";
                             var resultPath = Path.Combine(uploadsFolder, resultFileName);
                             resultBitmap.Save(resultPath, ImageFormat.Png);
@@ -83,7 +81,7 @@ namespace GorIsleMVC.Controllers
             int height = sourceBitmap.Height;
             var resultBitmap = new Bitmap(width, height);
 
-            // Padding miktarı
+
             int padding = kernelSize / 2;
 
             // Her piksel için mean filter uygula
@@ -107,12 +105,11 @@ namespace GorIsleMVC.Controllers
                         }
                     }
 
-                    // Ortalama değerleri hesapla
+    
                     int avgR = (int)(sumR / count);
                     int avgG = (int)(sumG / count);
                     int avgB = (int)(sumB / count);
 
-                    // Yeni pikseli ayarla
                     resultBitmap.SetPixel(x, y, Color.FromArgb(avgR, avgG, avgB));
                 }
             }

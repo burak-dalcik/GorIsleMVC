@@ -50,16 +50,16 @@ namespace GorIsleMVC.Controllers
 
                 using (var originalImage = Image.FromFile(tempPath))
                 {
-                    // Orijinal görüntüyü kaydet
+    
                     originalImage.Save(originalPath, ImageFormat.Jpeg);
 
-                    // Kırpma boyutlarını orijinal görüntü boyutlarına göre ayarla
+                    // kırpma boyutlarını orijinal görüntü boyutlarına göre ayarla
                     width = Math.Min(width, originalImage.Width - x);
                     height = Math.Min(height, originalImage.Height - y);
                     x = Math.Max(0, Math.Min(x, originalImage.Width - width));
                     y = Math.Max(0, Math.Min(y, originalImage.Height - height));
 
-                    // Kırpılmış görüntü oluştur
+
                     using (var croppedImage = new Bitmap(width, height))
                     {
                         using (Graphics g = Graphics.FromImage(croppedImage))

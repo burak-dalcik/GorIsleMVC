@@ -53,10 +53,9 @@ namespace GorIsleMVC.Controllers
 
                         using (var bitmap = new Bitmap(originalImage))
                         {
-                            // Eşikleme uygula
+                            // eşikleme 
                             var resultBitmap = ApplyThreshold(bitmap, threshold);
 
-                            // Sonucu kaydet
                             var resultFileName = $"threshold_{threshold}_{DateTime.Now:yyyyMMddHHmmss}.png";
                             var resultPath = Path.Combine(uploadsFolder, resultFileName);
                             resultBitmap.Save(resultPath, ImageFormat.Png);

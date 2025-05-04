@@ -34,7 +34,6 @@ namespace GorIsleMVC.Controllers
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
-                // İlk görüntüyü yükle
                 var image1FileName = $"arithmetic1_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var image1Path = Path.Combine(uploadsFolder, image1FileName);
                 using (var stream1 = new MemoryStream())
@@ -47,7 +46,6 @@ namespace GorIsleMVC.Controllers
                     }
                 }
 
-                // İkinci görüntüyü yükle
                 var image2FileName = $"arithmetic2_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var image2Path = Path.Combine(uploadsFolder, image2FileName);
                 using (var stream2 = new MemoryStream())
@@ -60,22 +58,19 @@ namespace GorIsleMVC.Controllers
                     }
                 }
 
-                // Görüntüleri aynı boyuta getir ve işlemi uygula
                 using (var bitmap1 = new Bitmap(image1Path))
                 using (var bitmap2 = new Bitmap(image2Path))
                 {
-                    // En büyük boyutları bul
                     int maxWidth = Math.Max(bitmap1.Width, bitmap2.Width);
                     int maxHeight = Math.Max(bitmap1.Height, bitmap2.Height);
 
-                    // Her iki görüntüyü de aynı boyuta getir
                     using (var resized1 = ResizeImage(bitmap1, maxWidth, maxHeight))
                     using (var resized2 = ResizeImage(bitmap2, maxWidth, maxHeight))
                     {
                         var resultFileName = $"result_{DateTime.Now:yyyyMMddHHmmss}.png";
                         var resultPath = Path.Combine(uploadsFolder, resultFileName);
 
-                        // Aritmetik işlemi uygula
+                        // Aritmetik işlemin uygulanması
                         using (var resultImage = ApplyArithmeticOperation(resized1, resized2, operation))
                         {
                             resultImage.Save(resultPath, ImageFormat.Png);
@@ -105,13 +100,12 @@ namespace GorIsleMVC.Controllers
             var result = new Bitmap(width, height);
             using (var graphics = Graphics.FromImage(result))
             {
-                // Yüksek kaliteli yeniden boyutlandırma ayarları
+                // yüksek kaliteli yeniden boyutlandırma ayarları
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.CompositingQuality = CompositingQuality.HighQuality;
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-                // Görüntüyü yeni boyuta çiz
                 graphics.DrawImage(image, 0, 0, width, height);
             }
             return result;
