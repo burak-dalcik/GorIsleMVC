@@ -99,24 +99,21 @@ namespace GorIsleMVC.Controllers
             byte[,,] grayPixels = new byte[width, height, 1];      // Grayscale array
             byte[,,] resultPixels = new byte[width, height, 4];    // ARGB - Sonuç
 
-            // ADIM 1: Bitmap'ten array'e piksel aktarımı ve grayscale dönüşümü
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
                     Color pixel = sourceBitmap.GetPixel(x, y);
 
-                    // Orijinal ARGB değerleri
+              
                     sourcePixels[x, y, 0] = pixel.A; // Alpha
                     sourcePixels[x, y, 1] = pixel.R; // Red
                     sourcePixels[x, y, 2] = pixel.G; // Green
                     sourcePixels[x, y, 3] = pixel.B; // Blue
 
-                    // Grayscale dönüşümü (ortalama metodu)
                     int gray = (int)((pixel.R + pixel.G + pixel.B) / 3.0);
                     grayPixels[x, y, 0] = (byte)gray;
 
-                    // Varsayılan olarak orijinal değerleri kopyala (kenar pikselleri için)
                     resultPixels[x, y, 0] = pixel.A;
                     resultPixels[x, y, 1] = (byte)gray;
                     resultPixels[x, y, 2] = (byte)gray;
@@ -124,7 +121,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde Prewitt operatörü uygulama
             for (int x = 1; x < width - 1; x++)
             {
                 for (int y = 1; y < height - 1; y++)
@@ -132,7 +128,6 @@ namespace GorIsleMVC.Controllers
                     int gx = 0; // X yönü gradyanı (dikey kenarlar)
                     int gy = 0; // Y yönü gradyanı (yatay kenarlar)
 
-                    // 3x3 kernel ile konvolüsyon işlemi
                     for (int i = -1; i <= 1; i++)
                     {
                         for (int j = -1; j <= 1; j++)
@@ -140,10 +135,8 @@ namespace GorIsleMVC.Controllers
                             int currentX = x + j;
                             int currentY = y + i;
 
-                            // Grayscale array'den değer al
                             byte grayValue = grayPixels[currentX, currentY, 0];
 
-                            // Prewitt kernel değerleri ile çarp
                             gx += grayValue * prewittX[i + 1, j + 1];
                             gy += grayValue * prewittY[i + 1, j + 1];
                         }
@@ -163,10 +156,8 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Kenar pikselleri - orijinal grayscale değerleri kopyala
             ProcessEdgePixels(sourcePixels, resultPixels, width, height);
 
-            // ADIM 4: Array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {
@@ -187,17 +178,14 @@ namespace GorIsleMVC.Controllers
 
         private void ProcessEdgePixels(byte[,,] sourcePixels, byte[,,] resultPixels, int width, int height)
         {
-            // Üst ve alt kenarlar
             for (int x = 0; x < width; x++)
             {
-                // Üst kenar (y = 0)
                 int grayTop = (int)((sourcePixels[x, 0, 1] + sourcePixels[x, 0, 2] + sourcePixels[x, 0, 3]) / 3.0);
                 resultPixels[x, 0, 0] = sourcePixels[x, 0, 0]; // Alpha
                 resultPixels[x, 0, 1] = (byte)grayTop;         // Red
                 resultPixels[x, 0, 2] = (byte)grayTop;         // Green
                 resultPixels[x, 0, 3] = (byte)grayTop;         // Blue
 
-                // Alt kenar (y = height - 1)
                 int grayBottom = (int)((sourcePixels[x, height - 1, 1] + sourcePixels[x, height - 1, 2] + sourcePixels[x, height - 1, 3]) / 3.0);
                 resultPixels[x, height - 1, 0] = sourcePixels[x, height - 1, 0]; // Alpha
                 resultPixels[x, height - 1, 1] = (byte)grayBottom;               // Red
@@ -205,17 +193,14 @@ namespace GorIsleMVC.Controllers
                 resultPixels[x, height - 1, 3] = (byte)grayBottom;               // Blue
             }
 
-            // Sol ve sağ kenarlar
             for (int y = 0; y < height; y++)
             {
-                // Sol kenar (x = 0)
                 int grayLeft = (int)((sourcePixels[0, y, 1] + sourcePixels[0, y, 2] + sourcePixels[0, y, 3]) / 3.0);
                 resultPixels[0, y, 0] = sourcePixels[0, y, 0]; // Alpha
                 resultPixels[0, y, 1] = (byte)grayLeft;        // Red
                 resultPixels[0, y, 2] = (byte)grayLeft;        // Green
                 resultPixels[0, y, 3] = (byte)grayLeft;        // Blue
 
-                // Sağ kenar (x = width - 1)
                 int grayRight = (int)((sourcePixels[width - 1, y, 1] + sourcePixels[width - 1, y, 2] + sourcePixels[width - 1, y, 3]) / 3.0);
                 resultPixels[width - 1, y, 0] = sourcePixels[width - 1, y, 0]; // Alpha
                 resultPixels[width - 1, y, 1] = (byte)grayRight;               // Red

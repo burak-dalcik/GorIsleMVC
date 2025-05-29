@@ -147,11 +147,9 @@ namespace GorIsleMVC.Controllers
             int width = sourceBitmap.Width;
             int height = sourceBitmap.Height;
 
-            // ARRAY TABANLI YAKLAŞIM
             byte[,,] sourcePixels = new byte[width, height, 4]; // ARGB
             byte[,,] resultPixels = new byte[width, height, 4]; // ARGB
 
-            // ADIM 1: Bitmap'ten array'e piksel aktarımı
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -162,7 +160,6 @@ namespace GorIsleMVC.Controllers
                     sourcePixels[x, y, 2] = pixel.G; // Green
                     sourcePixels[x, y, 3] = pixel.B; // Blue
 
-                    // Önce orijinal değerleri kopyala
                     resultPixels[x, y, 0] = pixel.A;
                     resultPixels[x, y, 1] = pixel.R;
                     resultPixels[x, y, 2] = pixel.G;
@@ -170,7 +167,7 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde salt & pepper noise ekleme
+            // Array üzerinde salt & pepper noise ekleme
             int totalPixels = width * height;
             int noisePixels = (int)(totalPixels * density);
 
@@ -179,7 +176,6 @@ namespace GorIsleMVC.Controllers
                 int x = _random.Next(width);
                 int y = _random.Next(height);
 
-                // Salt (beyaz) veya Pepper (siyah) rastgele seç
                 if (_random.NextDouble() < 0.5)
                 {
                     // Pepper (siyah)
@@ -196,7 +192,7 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Array'den yeni Bitmap oluştur
+         
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {
@@ -221,11 +217,9 @@ namespace GorIsleMVC.Controllers
             int height = sourceBitmap.Height;
             int offset = filterSize / 2;
 
-            // ARRAY TABANLI YAKLAŞIM
             byte[,,] sourcePixels = new byte[width, height, 4]; // ARGB
             byte[,,] resultPixels = new byte[width, height, 4]; // ARGB
 
-            // ADIM 1: Bitmap'ten array'e piksel aktarımı
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -236,7 +230,6 @@ namespace GorIsleMVC.Controllers
                     sourcePixels[x, y, 2] = pixel.G; // Green
                     sourcePixels[x, y, 3] = pixel.B; // Blue
 
-                    // Varsayılan olarak orijinal değerleri kopyala
                     resultPixels[x, y, 0] = pixel.A;
                     resultPixels[x, y, 1] = pixel.R;
                     resultPixels[x, y, 2] = pixel.G;
@@ -244,7 +237,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde median filter işlemi
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
@@ -253,7 +245,6 @@ namespace GorIsleMVC.Controllers
                     List<byte> greenValues = new List<byte>();
                     List<byte> blueValues = new List<byte>();
 
-                    // Komşu pikselleri array'den topla
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
@@ -267,12 +258,10 @@ namespace GorIsleMVC.Controllers
                         }
                     }
 
-                    // Median hesapla
                     byte medianR = GetMedian(redValues);
                     byte medianG = GetMedian(greenValues);
                     byte medianB = GetMedian(blueValues);
 
-                    // Sonucu array'e kaydet
                     resultPixels[x, y, 0] = sourcePixels[x, y, 0]; // Alpha aynı kalır
                     resultPixels[x, y, 1] = medianR;
                     resultPixels[x, y, 2] = medianG;
@@ -280,10 +269,8 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Kenar pikselleri için median filter (basitleştirilmiş)
             ProcessImageEdgesArray(sourcePixels, resultPixels, width, height, filterSize);
 
-            // ADIM 4: Array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {
@@ -312,7 +299,6 @@ namespace GorIsleMVC.Controllers
             {
                 for (int y = 0; y < offset; y++)
                 {
-                    // Üst kenar - kullanılabilir komşuları topla
                     List<byte> redValues = new List<byte>();
                     List<byte> greenValues = new List<byte>();
                     List<byte> blueValues = new List<byte>();
@@ -387,7 +373,7 @@ namespace GorIsleMVC.Controllers
         {
             if (values.Count == 0) return 0;
 
-            values.Sort(); // LINQ Sort daha hızlı
+            values.Sort(); 
 
             int n = values.Count;
             if (n % 2 == 0)

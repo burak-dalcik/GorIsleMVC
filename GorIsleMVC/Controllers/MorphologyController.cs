@@ -100,11 +100,9 @@ namespace GorIsleMVC.Controllers
             int height = sourceBitmap.Height;
             int offset = kernelSize / 2;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];  // ARGB formatında orijinal
             byte[,,,] resultPixels = new byte[width, height, 4, 1];  // Dilation sonucu
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)

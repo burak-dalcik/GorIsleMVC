@@ -74,7 +74,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 bitmap?.Dispose();
@@ -87,11 +86,9 @@ namespace GorIsleMVC.Controllers
             int width = sourceBitmap.Width;
             int height = sourceBitmap.Height;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];  // ARGB formatında orijinal
             byte[,,,] resultPixels = new byte[width, height, 4, 1];  // Threshold sonucu
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -104,23 +101,18 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde threshold (eşikleme) işlemi yap
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // Array'den RGB değerlerini al
                     byte red = sourcePixels[x, y, 1, 0];
                     byte green = sourcePixels[x, y, 2, 0];
                     byte blue = sourcePixels[x, y, 3, 0];
 
-                    // Gri tonlama değerini hesapla (ortalama yöntemi)
                     int grayValue = (red + green + blue) / 3;
 
-                    // Eşikleme uygula - threshold değeri ile karşılaştır
                     byte thresholdedValue = (byte)(grayValue >= threshold ? 255 : 0);
 
-                    // Sonucu array'e kaydet
                     resultPixels[x, y, 0, 0] = sourcePixels[x, y, 0, 0]; // Alpha değeri aynı kalır
                     resultPixels[x, y, 1, 0] = thresholdedValue; // Red - Beyaz veya Siyah
                     resultPixels[x, y, 2, 0] = thresholdedValue; // Green - Beyaz veya Siyah
@@ -128,7 +120,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Threshold uygulanmış array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {

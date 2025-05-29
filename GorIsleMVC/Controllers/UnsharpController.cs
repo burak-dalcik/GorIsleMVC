@@ -82,19 +82,16 @@ namespace GorIsleMVC.Controllers
             int width = sourceBitmap.Width;
             int height = sourceBitmap.Height;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];   // ARGB formatında orijinal
             float[,,,] blurredPixels = new float[width, height, 4, 1]; // Gaussian blur sonucu (float precision)
             byte[,,,] resultPixels = new byte[width, height, 4, 1];   // Unsharp mask sonucu
 
-            // Gaussian Blur için 3x3 kernel
             float[,] kernel = {
                 { 1/16f, 2/16f, 1/16f },
                 { 2/16f, 4/16f, 2/16f },
                 { 1/16f, 2/16f, 1/16f }
             };
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -107,8 +104,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde Gaussian Blur uygula
-            // İlk olarak kenar pikselleri kopyala
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -120,14 +115,13 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // Gaussian blur'u iç piksellere uygula (padding=1)
+            // Gaussian blur'u iç piksellere uygula 
             for (int x = 1; x < width - 1; x++)
             {
                 for (int y = 1; y < height - 1; y++)
                 {
                     float sumR = 0, sumG = 0, sumB = 0;
 
-                    // 3x3 kernel ile convolution
                     for (int ky = -1; ky <= 1; ky++)
                     {
                         for (int kx = -1; kx <= 1; kx++)
@@ -136,7 +130,6 @@ namespace GorIsleMVC.Controllers
                             int sourceY = y + ky;
                             float weight = kernel[ky + 1, kx + 1];
 
-                            // Array'den RGB değerlerini al
                             float red = sourcePixels[sourceX, sourceY, 1, 0];
                             float green = sourcePixels[sourceX, sourceY, 2, 0];
                             float blue = sourcePixels[sourceX, sourceY, 3, 0];
@@ -147,7 +140,6 @@ namespace GorIsleMVC.Controllers
                         }
                     }
 
-                    // Blur sonucunu array'e kaydet
                     blurredPixels[x, y, 0, 0] = sourcePixels[x, y, 0, 0]; // Alpha aynı kalır
                     blurredPixels[x, y, 1, 0] = Math.Min(255, Math.Max(0, sumR)); // Red
                     blurredPixels[x, y, 2, 0] = Math.Min(255, Math.Max(0, sumG)); // Green
@@ -155,8 +147,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Array üzerinde Unsharp Mask uygula
-            // İlk olarak kenar pikselleri kopyala
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -182,7 +172,6 @@ namespace GorIsleMVC.Controllers
                     float blurredG = blurredPixels[x, y, 2, 0];
                     float blurredB = blurredPixels[x, y, 3, 0];
 
-                    // Fark hesapla
                     float diffR = originalR - blurredR;
                     float diffG = originalG - blurredG;
                     float diffB = originalB - blurredB;
@@ -211,7 +200,7 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 4: Unsharp mask uygulanmış array'den yeni Bitmap oluştur
+            // Unsharp mask uygulanmış array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {

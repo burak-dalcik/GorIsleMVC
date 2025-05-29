@@ -49,7 +49,6 @@ namespace GorIsleMVC.Controllers
 
                 bitmap = new Bitmap(originalImage);
 
-                // Histogram hesaplama için array yaklaşımı
                 var histogramData = CalculateHistogramManual(bitmap);
 
                 TempData["RedHistogram"] = string.Join(",", histogramData.RedHistogram);
@@ -67,7 +66,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 bitmap?.Dispose();
@@ -132,16 +130,13 @@ namespace GorIsleMVC.Controllers
             int width = sourceBitmap.Width;
             int height = sourceBitmap.Height;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];  // ARGB formatında orijinal
 
-            // Histogram dizileri
             int[] redHistogram = new int[256];
             int[] greenHistogram = new int[256];
             int[] blueHistogram = new int[256];
             int[] grayHistogram = new int[256];
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -159,17 +154,14 @@ namespace GorIsleMVC.Controllers
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // Array'den RGB değerlerini al
                     byte red = sourcePixels[x, y, 1, 0];
                     byte green = sourcePixels[x, y, 2, 0];
                     byte blue = sourcePixels[x, y, 3, 0];
 
-                    // Histogram değerlerini artır
                     redHistogram[red]++;
                     greenHistogram[green]++;
                     blueHistogram[blue]++;
 
-                    // Gri tonlama hesapla ve histogram'a ekle
                     int gray = (red + green + blue) / 3;
                     grayHistogram[gray]++;
                 }
@@ -190,15 +182,12 @@ namespace GorIsleMVC.Controllers
             int height = sourceBitmap.Height;
             int totalPixels = width * height;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];  // ARGB formatında orijinal
             byte[,,,] equalizedPixels = new byte[width, height, 4, 1]; // Eşitlenmiş sonuç
 
-            // Histogram ve CDF dizileri
             int[] histogram = new int[256];
             int[] cdf = new int[256];
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar ve histogram hesapla
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -209,41 +198,35 @@ namespace GorIsleMVC.Controllers
                     sourcePixels[x, y, 2, 0] = pixel.G; // Green
                     sourcePixels[x, y, 3, 0] = pixel.B; // Blue
 
-                    // Gri tonlama değeri hesapla ve histogram'a ekle
                     int gray = (pixel.R + pixel.G + pixel.B) / 3;
                     histogram[gray]++;
                 }
             }
 
-            // ADIM 2: Cumulative Distribution Function (CDF) hesapla
+            // Cumulative Distribution Function (CDF) hesapla
             cdf[0] = histogram[0];
             for (int i = 1; i < 256; i++)
             {
                 cdf[i] = cdf[i - 1] + histogram[i];
             }
 
-            // ADIM 3: Array üzerinde histogram eşitleme işlemi yap
+            //  Array üzerinde histogram eşitleme işlemi 
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // Array'den RGB değerlerini al
                     byte red = sourcePixels[x, y, 1, 0];
                     byte green = sourcePixels[x, y, 2, 0];
                     byte blue = sourcePixels[x, y, 3, 0];
                     byte alpha = sourcePixels[x, y, 0, 0];
 
-                    // Gri tonlama değeri hesapla
                     int gray = (red + green + blue) / 3;
 
-                    // Histogram eşitleme formülü: newValue = (CDF[oldValue] * 255) / totalPixels
                     int newValue = (int)((cdf[gray] * 255.0) / totalPixels);
 
-                    // Değeri 0-255 aralığında sınırla
                     newValue = Math.Max(0, Math.Min(255, newValue));
                     byte equalizedGray = (byte)newValue;
 
-                    // Sonucu array'e kaydet (gri tonlamalı)
                     equalizedPixels[x, y, 0, 0] = alpha;         // Alpha aynı kalır
                     equalizedPixels[x, y, 1, 0] = equalizedGray; // Red = Equalized Gray
                     equalizedPixels[x, y, 2, 0] = equalizedGray; // Green = Equalized Gray
@@ -251,7 +234,7 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 4: Eşitlenmiş array'den yeni Bitmap oluştur
+            // Eşitlenmiş array'den yeni  oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {
@@ -268,7 +251,6 @@ namespace GorIsleMVC.Controllers
             return resultBitmap;
         }
 
-        // Histogram verilerini taşımak için yardımcı sınıf
         private class HistogramData
         {
             public int[] RedHistogram { get; set; }

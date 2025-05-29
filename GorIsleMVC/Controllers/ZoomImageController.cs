@@ -90,7 +90,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 bitmap?.Dispose();
@@ -103,20 +102,16 @@ namespace GorIsleMVC.Controllers
             int originalWidth = sourceBitmap.Width;
             int originalHeight = sourceBitmap.Height;
 
-            // Crop boyutlarını hesapla
             int cropWidth = (int)(originalWidth / zoomFactor);
             int cropHeight = (int)(originalHeight / zoomFactor);
 
-            // Merkezden kırpma koordinatları
             int cropX = (originalWidth - cropWidth) / 2;
             int cropY = (originalHeight - cropHeight) / 2;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[originalWidth, originalHeight, 4, 1];  // ARGB formatında orijinal
             byte[,,,] croppedPixels = new byte[cropWidth, cropHeight, 4, 1];        // Kırpılmış görsel
             byte[,,,] resultPixels = new byte[originalWidth, originalHeight, 4, 1]; // Final sonuç (eski boyutlarda)
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < originalWidth; x++)
             {
                 for (int y = 0; y < originalHeight; y++)
@@ -129,7 +124,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Merkezi kırpma işlemi - array'den array'e kopyalama
             for (int x = 0; x < cropWidth; x++)
             {
                 for (int y = 0; y < cropHeight; y++)
@@ -137,7 +131,6 @@ namespace GorIsleMVC.Controllers
                     int sourceX = cropX + x;
                     int sourceY = cropY + y;
 
-                    // Sınır kontrolü
                     if (sourceX >= 0 && sourceX < originalWidth && sourceY >= 0 && sourceY < originalHeight)
                     {
                         croppedPixels[x, y, 0, 0] = sourcePixels[sourceX, sourceY, 0, 0]; // Alpha
@@ -147,7 +140,6 @@ namespace GorIsleMVC.Controllers
                     }
                     else
                     {
-                        // Sınır dışında kalırsa şeffaf piksel
                         croppedPixels[x, y, 0, 0] = 0;   // Alpha
                         croppedPixels[x, y, 1, 0] = 0;   // Red
                         croppedPixels[x, y, 2, 0] = 0;   // Green
@@ -156,51 +148,40 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Bilinear interpolation ile ölçeklendirme (array'den array'e)
-            // Kırpılmış görseli orijinal boyutlara çıkar
             for (int x = 0; x < originalWidth; x++)
             {
                 for (int y = 0; y < originalHeight; y++)
                 {
-                    // Orijinal koordinatları kırpılmış görsel koordinatlarına çevir
                     float srcX = (float)x * cropWidth / originalWidth;
                     float srcY = (float)y * cropHeight / originalHeight;
 
-                    // Bilinear interpolation için 4 komşu piksel
                     int x1 = (int)Math.Floor(srcX);
                     int y1 = (int)Math.Floor(srcY);
                     int x2 = Math.Min(x1 + 1, cropWidth - 1);
                     int y2 = Math.Min(y1 + 1, cropHeight - 1);
 
-                    // Interpolation ağırlıkları
                     float weightX = srcX - x1;
                     float weightY = srcY - y1;
 
-                    // Sınır kontrolü
                     x1 = Math.Max(0, Math.Min(x1, cropWidth - 1));
                     y1 = Math.Max(0, Math.Min(y1, cropHeight - 1));
 
-                    // Her kanal için bilinear interpolation
                     for (int channel = 0; channel < 4; channel++)
                     {
-                        // 4 komşu pikselin değerleri
                         float topLeft = croppedPixels[x1, y1, channel, 0];
                         float topRight = croppedPixels[x2, y1, channel, 0];
                         float bottomLeft = croppedPixels[x1, y2, channel, 0];
                         float bottomRight = croppedPixels[x2, y2, channel, 0];
 
-                        // Bilinear interpolation hesaplaması
                         float top = topLeft * (1 - weightX) + topRight * weightX;
                         float bottom = bottomLeft * (1 - weightX) + bottomRight * weightX;
                         float result = top * (1 - weightY) + bottom * weightY;
 
-                        // Sonucu array'e kaydet
                         resultPixels[x, y, channel, 0] = (byte)Math.Max(0, Math.Min(255, Math.Round(result)));
                     }
                 }
             }
 
-            // ADIM 4: Array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(originalWidth, originalHeight);
             for (int x = 0; x < originalWidth; x++)
             {

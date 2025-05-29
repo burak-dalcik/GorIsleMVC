@@ -74,7 +74,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 bitmap?.Dispose();
@@ -88,11 +87,9 @@ namespace GorIsleMVC.Controllers
             int height = sourceBitmap.Height;
             int padding = kernelSize / 2;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];  // ARGB formatında orijinal
             byte[,,,] resultPixels = new byte[width, height, 4, 1];  // Mean filter sonucu
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -105,13 +102,10 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde mean filter işlemi yap
-            // İlk olarak kenar pikselleri kopyala (padding alanları)
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // Varsayılan olarak orijinal değerleri kopyala
                     resultPixels[x, y, 0, 0] = sourcePixels[x, y, 0, 0]; // Alpha
                     resultPixels[x, y, 1, 0] = sourcePixels[x, y, 1, 0]; // Red
                     resultPixels[x, y, 2, 0] = sourcePixels[x, y, 2, 0]; // Green
@@ -119,7 +113,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // Mean filter'ı padding dahilindeki piksellere uygula
             for (int x = padding; x < width - padding; x++)
             {
                 for (int y = padding; y < height - padding; y++)
@@ -127,7 +120,6 @@ namespace GorIsleMVC.Controllers
                     double sumR = 0, sumG = 0, sumB = 0;
                     int count = 0;
 
-                    // Kernel içindeki pikselleri array'den topla
                     for (int i = -padding; i <= padding; i++)
                     {
                         for (int j = -padding; j <= padding; j++)
@@ -135,7 +127,6 @@ namespace GorIsleMVC.Controllers
                             int currentX = x + i;
                             int currentY = y + j;
 
-                            // Array'den RGB değerlerini al
                             byte red = sourcePixels[currentX, currentY, 1, 0];
                             byte green = sourcePixels[currentX, currentY, 2, 0];
                             byte blue = sourcePixels[currentX, currentY, 3, 0];
@@ -147,12 +138,10 @@ namespace GorIsleMVC.Controllers
                         }
                     }
 
-                    // Ortalama hesapla
                     byte avgR = (byte)(sumR / count);
                     byte avgG = (byte)(sumG / count);
                     byte avgB = (byte)(sumB / count);
 
-                    // Sonucu array'e kaydet (Alpha değeri aynı kalır)
                     resultPixels[x, y, 0, 0] = sourcePixels[x, y, 0, 0]; // Alpha aynı kalır
                     resultPixels[x, y, 1, 0] = avgR; // Ortalama Red
                     resultPixels[x, y, 2, 0] = avgG; // Ortalama Green
@@ -160,7 +149,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Mean filter uygulanmış array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {

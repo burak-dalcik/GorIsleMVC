@@ -74,7 +74,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 originalBitmap?.Dispose();
@@ -87,11 +86,9 @@ namespace GorIsleMVC.Controllers
             int width = sourceBitmap.Width;
             int height = sourceBitmap.Height;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];  // ARGB formatında orijinal
             byte[,,,] grayPixels = new byte[width, height, 4, 1];    // Grayscale sonucu
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -104,29 +101,19 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde grayscale dönüşümü yap
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // Array'den RGB değerlerini al
                     byte red = sourcePixels[x, y, 1, 0];
                     byte green = sourcePixels[x, y, 2, 0];
                     byte blue = sourcePixels[x, y, 3, 0];
                     byte alpha = sourcePixels[x, y, 0, 0];
 
-                    // 3 farklı grayscale yöntemi seçeneği:
 
-                    // Yöntem 1: Basit ortalama (orijinal kodda kullanılan)
                     byte grayValue = (byte)((red + green + blue) / 3);
 
-                    // Yöntem 2: Ağırlıklı ortalama (İnsan gözünün algısına daha yakın)
-                    // byte grayValue = (byte)(0.299 * red + 0.587 * green + 0.114 * blue);
-
-                    // Yöntem 3: Luminance formülü (ITU-R BT.709 standardı)
-                    // byte grayValue = (byte)(0.2126 * red + 0.7152 * green + 0.0722 * blue);
-
-                    // Sonucu array'e kaydet
+     
                     grayPixels[x, y, 0, 0] = alpha;     // Alpha aynı kalır
                     grayPixels[x, y, 1, 0] = grayValue; // Red = Gray
                     grayPixels[x, y, 2, 0] = grayValue; // Green = Gray
@@ -134,7 +121,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Grayscale array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {

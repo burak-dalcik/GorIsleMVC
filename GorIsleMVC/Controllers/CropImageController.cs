@@ -88,7 +88,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 originalBitmap?.Dispose();
@@ -101,17 +100,14 @@ namespace GorIsleMVC.Controllers
             int sourceWidth = sourceBitmap.Width;
             int sourceHeight = sourceBitmap.Height;
 
-            // Güvenlik kontrolleri
             cropX = Math.Max(0, Math.Min(cropX, sourceWidth - 1));
             cropY = Math.Max(0, Math.Min(cropY, sourceHeight - 1));
             cropWidth = Math.Max(1, Math.Min(cropWidth, sourceWidth - cropX));
             cropHeight = Math.Max(1, Math.Min(cropHeight, sourceHeight - cropY));
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[sourceWidth, sourceHeight, 4, 1];  // ARGB formatında orijinal
             byte[,,,] croppedPixels = new byte[cropWidth, cropHeight, 4, 1];    // Kırpılmış sonuç
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < sourceWidth; x++)
             {
                 for (int y = 0; y < sourceHeight; y++)
@@ -124,20 +120,15 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Array üzerinde crop işlemi yap
-            // Belirtilen koordinatlardan başlayarak istenilen boyutta kırp
             for (int x = 0; x < cropWidth; x++)
             {
                 for (int y = 0; y < cropHeight; y++)
                 {
-                    // Kaynak array'deki karşılık gelen koordinatları hesapla
                     int sourceX = cropX + x;
                     int sourceY = cropY + y;
 
-                    // Sınır kontrolü (ekstra güvenlik)
                     if (sourceX < sourceWidth && sourceY < sourceHeight)
                     {
-                        // Kaynak array'den hedef array'e piksel kopyala
                         croppedPixels[x, y, 0, 0] = sourcePixels[sourceX, sourceY, 0, 0]; // Alpha
                         croppedPixels[x, y, 1, 0] = sourcePixels[sourceX, sourceY, 1, 0]; // Red
                         croppedPixels[x, y, 2, 0] = sourcePixels[sourceX, sourceY, 2, 0]; // Green
@@ -145,7 +136,6 @@ namespace GorIsleMVC.Controllers
                     }
                     else
                     {
-                        // Sınır dışı durumda varsayılan değerler (siyah)
                         croppedPixels[x, y, 0, 0] = 255; // Alpha (opak)
                         croppedPixels[x, y, 1, 0] = 0;   // Red
                         croppedPixels[x, y, 2, 0] = 0;   // Green
@@ -154,7 +144,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 3: Kırpılmış array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(cropWidth, cropHeight);
             for (int x = 0; x < cropWidth; x++)
             {

@@ -49,7 +49,7 @@ namespace GorIsleMVC.Controllers
 
             try
             {
-                // Yüklenen dosyayı geçici konuma kaydet
+             
                 stream = new FileStream(tempPath, FileMode.Create);
                 await imageFile.CopyToAsync(stream);
                 stream.Close();
@@ -58,17 +58,17 @@ namespace GorIsleMVC.Controllers
 
                 originalImage = new Bitmap(tempPath);
 
-                // Orijinal görseli kaydet
+                
                 originalImage.Save(originalPath, ImageFormat.Jpeg);
 
                 int width = originalImage.Width;
                 int height = originalImage.Height;
 
-                // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
+                // - 4 boyutlu array [x, y, kanal, 1]
                 byte[,,,] originalPixels = new byte[width, height, 4, 1]; // ARGB formatında
                 byte[,,,] binaryPixels = new byte[width, height, 4, 1];   // Binary sonuç
 
-                // ADIM 1: Orijinal görselin piksellerini array'e aktar
+                
                 for (int x = 0; x < width; x++)
                 {
                     for (int y = 0; y < height; y++)
@@ -92,13 +92,11 @@ namespace GorIsleMVC.Controllers
                         byte green = originalPixels[x, y, 2, 0];
                         byte blue = originalPixels[x, y, 3, 0];
 
-                        // Gri tonlama hesaplama (kendi algoritman)
+                        // Gri tonlama hesaplama 
                         byte grayValue = (byte)((red + green + blue) / 3);
 
-                        // Binary dönüşüm (threshold ile karşılaştırma)
                         byte binaryValue = (byte)(grayValue > threshold ? 255 : 0);
 
-                        // Binary sonucu array'e kaydet
                         binaryPixels[x, y, 0, 0] = alpha;       // Alpha değeri aynı kalır
                         binaryPixels[x, y, 1, 0] = binaryValue; // Red = binary değer
                         binaryPixels[x, y, 2, 0] = binaryValue; // Green = binary değer

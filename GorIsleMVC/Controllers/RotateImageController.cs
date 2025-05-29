@@ -75,7 +75,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 bitmap?.Dispose();
@@ -93,15 +92,12 @@ namespace GorIsleMVC.Controllers
             double cosTheta = Math.Cos(angleRadians);
             double sinTheta = Math.Sin(angleRadians);
 
-            // Yeni boyutları hesapla (döndürülmüş görsel için gerekli alan)
             int newWidth = (int)(Math.Abs(width * cosTheta) + Math.Abs(height * sinTheta)) + 1;
             int newHeight = (int)(Math.Abs(width * sinTheta) + Math.Abs(height * cosTheta)) + 1;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] sourcePixels = new byte[width, height, 4, 1];      // ARGB formatında orijinal
             byte[,,,] resultPixels = new byte[newWidth, newHeight, 4, 1]; // Döndürülmüş sonuç
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -114,7 +110,6 @@ namespace GorIsleMVC.Controllers
                 }
             }
 
-            // ADIM 2: Result array'ini şeffaf beyaz ile doldur
             for (int x = 0; x < newWidth; x++)
             {
                 for (int y = 0; y < newHeight; y++)
@@ -125,45 +120,34 @@ namespace GorIsleMVC.Controllers
                     resultPixels[x, y, 3, 0] = 255; // Blue (beyaz)
                 }
             }
-
-            // ADIM 3: Array üzerinde döndürme işlemi yap
-            // Merkez noktaları hesapla
             double centerX = width / 2.0;
             double centerY = height / 2.0;
             double newCenterX = newWidth / 2.0;
             double newCenterY = newHeight / 2.0;
 
-            // Her yeni piksel pozisyonu için orijinal pozisyonu hesapla (Inverse transformation)
             for (int newX = 0; newX < newWidth; newX++)
             {
                 for (int newY = 0; newY < newHeight; newY++)
                 {
-                    // Yeni koordinatları merkeze göre normalize et
                     double relativeNewX = newX - newCenterX;
                     double relativeNewY = newY - newCenterY;
 
-                    // Ters döndürme uygula (orijinal pozisyonu bul)
                     double originalRelativeX = relativeNewX * cosTheta + relativeNewY * sinTheta;
                     double originalRelativeY = -relativeNewX * sinTheta + relativeNewY * cosTheta;
 
-                    // Orijinal koordinat sistemine geri dönüştür
                     int originalX = (int)Math.Round(originalRelativeX + centerX);
                     int originalY = (int)Math.Round(originalRelativeY + centerY);
 
-                    // Orijinal sınırlar içinde mi kontrol et
                     if (originalX >= 0 && originalX < width && originalY >= 0 && originalY < height)
                     {
-                        // Array'den orijinal piksel değerlerini al ve yeni pozisyona kopyala
                         resultPixels[newX, newY, 0, 0] = sourcePixels[originalX, originalY, 0, 0]; // Alpha
                         resultPixels[newX, newY, 1, 0] = sourcePixels[originalX, originalY, 1, 0]; // Red
                         resultPixels[newX, newY, 2, 0] = sourcePixels[originalX, originalY, 2, 0]; // Green
                         resultPixels[newX, newY, 3, 0] = sourcePixels[originalX, originalY, 3, 0]; // Blue
                     }
-                    // Sınırlar dışındaysa zaten beyaz ile doldurulmuş, değiştirme
                 }
             }
 
-            // ADIM 4: Döndürülmüş array'den yeni Bitmap oluştur
             Bitmap resultBitmap = new Bitmap(newWidth, newHeight);
             for (int x = 0; x < newWidth; x++)
             {

@@ -69,7 +69,6 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                // Manuel cleanup işlemleri
                 stream?.Dispose();
                 originalImage?.Dispose();
                 bitmap?.Dispose();
@@ -82,11 +81,9 @@ namespace GorIsleMVC.Controllers
             int width = original.Width;
             int height = original.Height;
 
-            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
             byte[,,,] originalPixels = new byte[width, height, 4, 1]; // ARGB formatında orijinal
             byte[,,,] contrastPixels = new byte[width, height, 4, 1];  // Kontrast ayarlı sonuç
 
-            // Kontrast lookup tablosu oluştur
             double factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
             int[] lookupTable = new int[256];
             for (int i = 0; i < 256; i++)
@@ -95,7 +92,6 @@ namespace GorIsleMVC.Controllers
                 lookupTable[i] = (int)Math.Min(255, Math.Max(0, temp));
             }
 
-            // ADIM 1: Orijinal görselin piksellerini array'e aktar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
