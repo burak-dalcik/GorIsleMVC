@@ -4,8 +4,6 @@ using System.Drawing.Imaging;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-
 
 namespace GorIsleMVC.Controllers
 {
@@ -35,6 +33,11 @@ namespace GorIsleMVC.Controllers
 
             double densityValue = Math.Max(0, Math.Min(100, noiseDensity)) / 100.0;
 
+            MemoryStream stream = null;
+            Image originalImage = null;
+            Bitmap bitmap = null;
+            Bitmap noisyImage = null;
+
             try
             {
                 var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
@@ -44,30 +47,24 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                originalImage = Image.FromStream(stream);
+                originalImage.Save(originalPath, ImageFormat.Png);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            var noisyImage = ApplySaltAndPepperNoise(bitmap, densityValue);
+                bitmap = new Bitmap(originalImage);
+                noisyImage = ApplySaltAndPepperNoise(bitmap, densityValue);
 
-                            var resultFileName = $"noisy_{noiseDensity}_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            noisyImage.Save(resultPath, ImageFormat.Png);
+                var resultFileName = $"noisy_{noiseDensity}_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                noisyImage.Save(resultPath, ImageFormat.Png);
 
-                            TempData["OriginalImage"] = $"/uploads/{originalFileName}";
-                            TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
-                            TempData["Density"] = noiseDensity.ToString();
-                            TempData["ProcessType"] = "noise";
-                        }
-                    }
-                }
+                TempData["OriginalImage"] = $"/uploads/{originalFileName}";
+                TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
+                TempData["Density"] = noiseDensity.ToString();
+                TempData["ProcessType"] = "noise";
 
                 return View("Result");
             }
@@ -75,6 +72,14 @@ namespace GorIsleMVC.Controllers
             {
                 TempData["Error"] = "Görüntü işleme sırasında bir hata oluştu: " + ex.Message;
                 return RedirectToAction("Index");
+            }
+            finally
+            {
+                // Manuel cleanup
+                stream?.Dispose();
+                originalImage?.Dispose();
+                bitmap?.Dispose();
+                noisyImage?.Dispose();
             }
         }
 
@@ -87,6 +92,11 @@ namespace GorIsleMVC.Controllers
                 return RedirectToAction("Index");
             }
 
+            MemoryStream stream = null;
+            Image originalImage = null;
+            Bitmap bitmap = null;
+            Bitmap filteredImage = null;
+
             try
             {
                 var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
@@ -96,30 +106,24 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                originalImage = Image.FromStream(stream);
+                originalImage.Save(originalPath, ImageFormat.Png);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            var filteredImage = ApplyMedianFilter(bitmap, filterSize);
+                bitmap = new Bitmap(originalImage);
+                filteredImage = ApplyMedianFilter(bitmap, filterSize);
 
-                            var resultFileName = $"filtered_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            filteredImage.Save(resultPath, ImageFormat.Png);
+                var resultFileName = $"filtered_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                filteredImage.Save(resultPath, ImageFormat.Png);
 
-                            TempData["OriginalImage"] = $"/uploads/{originalFileName}";
-                            TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
-                            TempData["FilterSize"] = filterSize;
-                            TempData["ProcessType"] = "filter";
-                        }
-                    }
-                }
+                TempData["OriginalImage"] = $"/uploads/{originalFileName}";
+                TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
+                TempData["FilterSize"] = filterSize;
+                TempData["ProcessType"] = "filter";
 
                 return View("Result");
             }
@@ -128,24 +132,45 @@ namespace GorIsleMVC.Controllers
                 TempData["Error"] = "Görüntü işleme sırasında bir hata oluştu: " + ex.Message;
                 return RedirectToAction("Index");
             }
+            finally
+            {
+                // Manuel cleanup
+                stream?.Dispose();
+                originalImage?.Dispose();
+                bitmap?.Dispose();
+                filteredImage?.Dispose();
+            }
         }
 
-        private Bitmap ApplySaltAndPepperNoise(Bitmap original, double density)
+        private Bitmap ApplySaltAndPepperNoise(Bitmap sourceBitmap, double density)
         {
-            int width = original.Width;
-            int height = original.Height;
-            Bitmap result = new Bitmap(width, height);
+            int width = sourceBitmap.Width;
+            int height = sourceBitmap.Height;
 
-            // Önce orijinal görüntüyü kopyala
+            // ARRAY TABANLI YAKLAŞIM
+            byte[,,] sourcePixels = new byte[width, height, 4]; // ARGB
+            byte[,,] resultPixels = new byte[width, height, 4]; // ARGB
+
+            // ADIM 1: Bitmap'ten array'e piksel aktarımı
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    result.SetPixel(x, y, original.GetPixel(x, y));
+                    Color pixel = sourceBitmap.GetPixel(x, y);
+                    sourcePixels[x, y, 0] = pixel.A; // Alpha
+                    sourcePixels[x, y, 1] = pixel.R; // Red
+                    sourcePixels[x, y, 2] = pixel.G; // Green
+                    sourcePixels[x, y, 3] = pixel.B; // Blue
+
+                    // Önce orijinal değerleri kopyala
+                    resultPixels[x, y, 0] = pixel.A;
+                    resultPixels[x, y, 1] = pixel.R;
+                    resultPixels[x, y, 2] = pixel.G;
+                    resultPixels[x, y, 3] = pixel.B;
                 }
             }
 
-            // Gürültü ekle
+            // ADIM 2: Array üzerinde salt & pepper noise ekleme
             int totalPixels = width * height;
             int noisePixels = (int)(totalPixels * density);
 
@@ -153,98 +178,169 @@ namespace GorIsleMVC.Controllers
             {
                 int x = _random.Next(width);
                 int y = _random.Next(height);
-                result.SetPixel(x, y, _random.NextDouble() < 0.5 ? Color.Black : Color.White);
+
+                // Salt (beyaz) veya Pepper (siyah) rastgele seç
+                if (_random.NextDouble() < 0.5)
+                {
+                    // Pepper (siyah)
+                    resultPixels[x, y, 1] = 0; // Red = 0
+                    resultPixels[x, y, 2] = 0; // Green = 0
+                    resultPixels[x, y, 3] = 0; // Blue = 0
+                }
+                else
+                {
+                    // Salt (beyaz)
+                    resultPixels[x, y, 1] = 255; // Red = 255
+                    resultPixels[x, y, 2] = 255; // Green = 255
+                    resultPixels[x, y, 3] = 255; // Blue = 255
+                }
             }
 
-            return result;
+            // ADIM 3: Array'den yeni Bitmap oluştur
+            Bitmap resultBitmap = new Bitmap(width, height);
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    byte alpha = resultPixels[x, y, 0];
+                    byte red = resultPixels[x, y, 1];
+                    byte green = resultPixels[x, y, 2];
+                    byte blue = resultPixels[x, y, 3];
+
+                    Color resultColor = Color.FromArgb(alpha, red, green, blue);
+                    resultBitmap.SetPixel(x, y, resultColor);
+                }
+            }
+
+            return resultBitmap;
         }
 
-        private Bitmap ApplyMedianFilter(Bitmap original, int filterSize)
+        private Bitmap ApplyMedianFilter(Bitmap sourceBitmap, int filterSize)
         {
-            int width = original.Width;
-            int height = original.Height;
-            Bitmap result = new Bitmap(width, height);
+            int width = sourceBitmap.Width;
+            int height = sourceBitmap.Height;
             int offset = filterSize / 2;
 
+            // ARRAY TABANLI YAKLAŞIM
+            byte[,,] sourcePixels = new byte[width, height, 4]; // ARGB
+            byte[,,] resultPixels = new byte[width, height, 4]; // ARGB
+
+            // ADIM 1: Bitmap'ten array'e piksel aktarımı
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Color pixel = sourceBitmap.GetPixel(x, y);
+                    sourcePixels[x, y, 0] = pixel.A; // Alpha
+                    sourcePixels[x, y, 1] = pixel.R; // Red
+                    sourcePixels[x, y, 2] = pixel.G; // Green
+                    sourcePixels[x, y, 3] = pixel.B; // Blue
+
+                    // Varsayılan olarak orijinal değerleri kopyala
+                    resultPixels[x, y, 0] = pixel.A;
+                    resultPixels[x, y, 1] = pixel.R;
+                    resultPixels[x, y, 2] = pixel.G;
+                    resultPixels[x, y, 3] = pixel.B;
+                }
+            }
+
+            // ADIM 2: Array üzerinde median filter işlemi
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
-    
-                    int[] redValues = new int[filterSize * filterSize];
-                    int[] greenValues = new int[filterSize * filterSize];
-                    int[] blueValues = new int[filterSize * filterSize];
-                    int index = 0;
+                    List<byte> redValues = new List<byte>();
+                    List<byte> greenValues = new List<byte>();
+                    List<byte> blueValues = new List<byte>();
 
-                    // Komşu pikselleri topla
+                    // Komşu pikselleri array'den topla
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
                         {
-                            Color pixel = original.GetPixel(x + i, y + j);
-                            redValues[index] = pixel.R;
-                            greenValues[index] = pixel.G;
-                            blueValues[index] = pixel.B;
-                            index++;
+                            int currentX = x + i;
+                            int currentY = y + j;
+
+                            redValues.Add(sourcePixels[currentX, currentY, 1]);
+                            greenValues.Add(sourcePixels[currentX, currentY, 2]);
+                            blueValues.Add(sourcePixels[currentX, currentY, 3]);
                         }
                     }
 
-                    int medianR = GetMedian(redValues);
-                    int medianG = GetMedian(greenValues);
-                    int medianB = GetMedian(blueValues);
+                    // Median hesapla
+                    byte medianR = GetMedian(redValues);
+                    byte medianG = GetMedian(greenValues);
+                    byte medianB = GetMedian(blueValues);
 
-                    result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
+                    // Sonucu array'e kaydet
+                    resultPixels[x, y, 0] = sourcePixels[x, y, 0]; // Alpha aynı kalır
+                    resultPixels[x, y, 1] = medianR;
+                    resultPixels[x, y, 2] = medianG;
+                    resultPixels[x, y, 3] = medianB;
                 }
             }
 
-            ProcessImageEdges(original, result, filterSize);
+            // ADIM 3: Kenar pikselleri için median filter (basitleştirilmiş)
+            ProcessImageEdgesArray(sourcePixels, resultPixels, width, height, filterSize);
 
-            return result;
+            // ADIM 4: Array'den yeni Bitmap oluştur
+            Bitmap resultBitmap = new Bitmap(width, height);
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    byte alpha = resultPixels[x, y, 0];
+                    byte red = resultPixels[x, y, 1];
+                    byte green = resultPixels[x, y, 2];
+                    byte blue = resultPixels[x, y, 3];
+
+                    Color resultColor = Color.FromArgb(alpha, red, green, blue);
+                    resultBitmap.SetPixel(x, y, resultColor);
+                }
+            }
+
+            return resultBitmap;
         }
 
-        private void ProcessImageEdges(Bitmap original, Bitmap result, int filterSize)
+        private void ProcessImageEdgesArray(byte[,,] sourcePixels, byte[,,] resultPixels,
+                                          int width, int height, int filterSize)
         {
-            int width = original.Width;
-            int height = original.Height;
             int offset = filterSize / 2;
 
+            // Üst ve alt kenarlar
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < offset; y++)
                 {
-                    int[] redValues = new int[(offset + y + 1) * (2 * offset + 1)];
-                    int[] greenValues = new int[(offset + y + 1) * (2 * offset + 1)];
-                    int[] blueValues = new int[(offset + y + 1) * (2 * offset + 1)];
-                    int index = 0;
+                    // Üst kenar - kullanılabilir komşuları topla
+                    List<byte> redValues = new List<byte>();
+                    List<byte> greenValues = new List<byte>();
+                    List<byte> blueValues = new List<byte>();
 
-                    for (int i = -Math.Min(x, offset); i <= Math.Min(width - 1 - x, offset); i++)
+                    for (int i = Math.Max(0, x - offset); i <= Math.Min(width - 1, x + offset); i++)
                     {
-                        for (int j = 0; j <= offset + y; j++)
+                        for (int j = 0; j <= Math.Min(height - 1, y + offset); j++)
                         {
-                            if (x + i >= 0 && x + i < width && j >= 0 && j < height)
-                            {
-                                Color pixel = original.GetPixel(x + i, j);
-                                redValues[index] = pixel.R;
-                                greenValues[index] = pixel.G;
-                                blueValues[index] = pixel.B;
-                                index++;
-                            }
+                            redValues.Add(sourcePixels[i, j, 1]);
+                            greenValues.Add(sourcePixels[i, j, 2]);
+                            blueValues.Add(sourcePixels[i, j, 3]);
                         }
                     }
 
-                    Array.Resize(ref redValues, index);
-                    Array.Resize(ref greenValues, index);
-                    Array.Resize(ref blueValues, index);
-
-                    if (index > 0)
+                    if (redValues.Count > 0)
                     {
-                        int medianR = GetMedian(redValues);
-                        int medianG = GetMedian(greenValues);
-                        int medianB = GetMedian(blueValues);
+                        resultPixels[x, y, 1] = GetMedian(redValues);
+                        resultPixels[x, y, 2] = GetMedian(greenValues);
+                        resultPixels[x, y, 3] = GetMedian(blueValues);
 
-                        result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
-
-                        result.SetPixel(x, height - 1 - y, Color.FromArgb(medianR, medianG, medianB));
+                        // Alt kenar için de aynı işlemi yap
+                        int bottomY = height - 1 - y;
+                        if (bottomY != y) // Çakışmayı önle
+                        {
+                            resultPixels[x, bottomY, 1] = GetMedian(redValues);
+                            resultPixels[x, bottomY, 2] = GetMedian(greenValues);
+                            resultPixels[x, bottomY, 3] = GetMedian(blueValues);
+                        }
                     }
                 }
             }
@@ -254,74 +350,54 @@ namespace GorIsleMVC.Controllers
             {
                 for (int x = 0; x < offset; x++)
                 {
-                    // Sol kenar için değerleri topla
-                    int[] redValues = new int[(offset + x + 1) * (2 * offset + 1)];
-                    int[] greenValues = new int[(offset + x + 1) * (2 * offset + 1)];
-                    int[] blueValues = new int[(offset + x + 1) * (2 * offset + 1)];
-                    int index = 0;
+                    List<byte> redValues = new List<byte>();
+                    List<byte> greenValues = new List<byte>();
+                    List<byte> blueValues = new List<byte>();
 
-                    for (int i = 0; i <= offset + x; i++)
+                    for (int i = 0; i <= Math.Min(width - 1, x + offset); i++)
                     {
-                        for (int j = -offset; j <= offset; j++)
+                        for (int j = Math.Max(0, y - offset); j <= Math.Min(height - 1, y + offset); j++)
                         {
-                            if (i >= 0 && i < width && y + j >= 0 && y + j < height)
-                            {
-                                Color pixel = original.GetPixel(i, y + j);
-                                redValues[index] = pixel.R;
-                                greenValues[index] = pixel.G;
-                                blueValues[index] = pixel.B;
-                                index++;
-                            }
+                            redValues.Add(sourcePixels[i, j, 1]);
+                            greenValues.Add(sourcePixels[i, j, 2]);
+                            blueValues.Add(sourcePixels[i, j, 3]);
                         }
                     }
 
-                    // Dizileri gerçek boyuta küçült
-                    Array.Resize(ref redValues, index);
-                    Array.Resize(ref greenValues, index);
-                    Array.Resize(ref blueValues, index);
-
-                    if (index > 0)
+                    if (redValues.Count > 0)
                     {
-                        int medianR = GetMedian(redValues);
-                        int medianG = GetMedian(greenValues);
-                        int medianB = GetMedian(blueValues);
+                        resultPixels[x, y, 1] = GetMedian(redValues);
+                        resultPixels[x, y, 2] = GetMedian(greenValues);
+                        resultPixels[x, y, 3] = GetMedian(blueValues);
 
-                        // Sol kenar için uygula
-                        result.SetPixel(x, y, Color.FromArgb(medianR, medianG, medianB));
-
-                        // Sağ kenar için uygula
-                        result.SetPixel(width - 1 - x, y, Color.FromArgb(medianR, medianG, medianB));
+                        // Sağ kenar için de aynı işlemi yap
+                        int rightX = width - 1 - x;
+                        if (rightX != x) // Çakışmayı önle
+                        {
+                            resultPixels[rightX, y, 1] = GetMedian(redValues);
+                            resultPixels[rightX, y, 2] = GetMedian(greenValues);
+                            resultPixels[rightX, y, 3] = GetMedian(blueValues);
+                        }
                     }
                 }
             }
         }
 
-        private int GetMedian(int[] values)
+        private byte GetMedian(List<byte> values)
         {
-            int n = values.Length;
-            for (int i = 0; i < n - 1; i++)
-            {
-                for (int j = 0; j < n - i - 1; j++)
-                {
-                    if (values[j] > values[j + 1])
-                    {
-                        int temp = values[j];
-                        values[j] = values[j + 1];
-                        values[j + 1] = temp;
-                    }
-                }
-            }
+            if (values.Count == 0) return 0;
 
+            values.Sort(); // LINQ Sort daha hızlı
+
+            int n = values.Count;
             if (n % 2 == 0)
             {
-                // Çift sayıda eleman varsa ortadaki iki sayının ortalamasını al
-                return (values[n / 2 - 1] + values[n / 2]) / 2;
+                return (byte)((values[n / 2 - 1] + values[n / 2]) / 2);
             }
             else
             {
-                // Tek sayıda eleman varsa ortadaki sayıyı al
                 return values[n / 2];
             }
         }
     }
-} 
+}

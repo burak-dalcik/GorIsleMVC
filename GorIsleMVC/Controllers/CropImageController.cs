@@ -35,43 +35,42 @@ namespace GorIsleMVC.Controllers
             }
 
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
             var uniqueFileName = $"cropped_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-            var tempPath = Path.GetTempFileName();
+            MemoryStream stream = null;
+            Image originalImage = null;
+            Bitmap originalBitmap = null;
+            Bitmap croppedBitmap = null;
+
             try
             {
-                using (var stream = new FileStream(tempPath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
+                var uploadsFolder2 = Path.Combine(_environment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder2))
+                    Directory.CreateDirectory(uploadsFolder2);
 
-                using (var originalImage = Image.FromFile(tempPath))
-                {
-    
-                    originalImage.Save(originalPath, ImageFormat.Jpeg);
+                stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    // kırpma boyutlarını orijinal görüntü boyutlarına göre ayarla
-                    width = Math.Min(width, originalImage.Width - x);
-                    height = Math.Min(height, originalImage.Height - y);
-                    x = Math.Max(0, Math.Min(x, originalImage.Width - width));
-                    y = Math.Max(0, Math.Min(y, originalImage.Height - height));
+                originalImage = Image.FromStream(stream);
+                originalImage.Save(originalPath, ImageFormat.Jpeg);
 
+                // Kırpma boyutlarını orijinal görüntü boyutlarına göre ayarla
+                width = Math.Min(width, originalImage.Width - x);
+                height = Math.Min(height, originalImage.Height - y);
+                x = Math.Max(0, Math.Min(x, originalImage.Width - width));
+                y = Math.Max(0, Math.Min(y, originalImage.Height - y));
 
-                    using (var croppedImage = new Bitmap(width, height))
-                    {
-                        using (Graphics g = Graphics.FromImage(croppedImage))
-                        {
-                            var srcRect = new Rectangle(x, y, width, height);
-                            var destRect = new Rectangle(0, 0, width, height);
-                            g.DrawImage(originalImage, destRect, srcRect, GraphicsUnit.Pixel);
-                        }
+                originalBitmap = new Bitmap(originalImage);
+                croppedBitmap = CropImageManual(originalBitmap, x, y, width, height);
 
-                        croppedImage.Save(filePath, ImageFormat.Jpeg);
-                    }
-                }
+                croppedBitmap.Save(filePath, ImageFormat.Jpeg);
 
                 TempData["ProcessedImage"] = uniqueFileName;
                 TempData["OriginalImage"] = originalFileName;
@@ -79,6 +78,7 @@ namespace GorIsleMVC.Controllers
                 TempData["CropY"] = y;
                 TempData["CropWidth"] = width;
                 TempData["CropHeight"] = height;
+
                 return View("Result");
             }
             catch (Exception ex)
@@ -88,11 +88,89 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                if (System.IO.File.Exists(tempPath))
-                {
-                    System.IO.File.Delete(tempPath);
-                }
+                // Manuel cleanup işlemleri
+                stream?.Dispose();
+                originalImage?.Dispose();
+                originalBitmap?.Dispose();
+                croppedBitmap?.Dispose();
             }
         }
+
+        private Bitmap CropImageManual(Bitmap sourceBitmap, int cropX, int cropY, int cropWidth, int cropHeight)
+        {
+            int sourceWidth = sourceBitmap.Width;
+            int sourceHeight = sourceBitmap.Height;
+
+            // Güvenlik kontrolleri
+            cropX = Math.Max(0, Math.Min(cropX, sourceWidth - 1));
+            cropY = Math.Max(0, Math.Min(cropY, sourceHeight - 1));
+            cropWidth = Math.Max(1, Math.Min(cropWidth, sourceWidth - cropX));
+            cropHeight = Math.Max(1, Math.Min(cropHeight, sourceHeight - cropY));
+
+            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
+            byte[,,,] sourcePixels = new byte[sourceWidth, sourceHeight, 4, 1];  // ARGB formatında orijinal
+            byte[,,,] croppedPixels = new byte[cropWidth, cropHeight, 4, 1];    // Kırpılmış sonuç
+
+            // ADIM 1: Orijinal görselin piksellerini array'e aktar
+            for (int x = 0; x < sourceWidth; x++)
+            {
+                for (int y = 0; y < sourceHeight; y++)
+                {
+                    Color pixel = sourceBitmap.GetPixel(x, y);
+                    sourcePixels[x, y, 0, 0] = pixel.A; // Alpha
+                    sourcePixels[x, y, 1, 0] = pixel.R; // Red
+                    sourcePixels[x, y, 2, 0] = pixel.G; // Green
+                    sourcePixels[x, y, 3, 0] = pixel.B; // Blue
+                }
+            }
+
+            // ADIM 2: Array üzerinde crop işlemi yap
+            // Belirtilen koordinatlardan başlayarak istenilen boyutta kırp
+            for (int x = 0; x < cropWidth; x++)
+            {
+                for (int y = 0; y < cropHeight; y++)
+                {
+                    // Kaynak array'deki karşılık gelen koordinatları hesapla
+                    int sourceX = cropX + x;
+                    int sourceY = cropY + y;
+
+                    // Sınır kontrolü (ekstra güvenlik)
+                    if (sourceX < sourceWidth && sourceY < sourceHeight)
+                    {
+                        // Kaynak array'den hedef array'e piksel kopyala
+                        croppedPixels[x, y, 0, 0] = sourcePixels[sourceX, sourceY, 0, 0]; // Alpha
+                        croppedPixels[x, y, 1, 0] = sourcePixels[sourceX, sourceY, 1, 0]; // Red
+                        croppedPixels[x, y, 2, 0] = sourcePixels[sourceX, sourceY, 2, 0]; // Green
+                        croppedPixels[x, y, 3, 0] = sourcePixels[sourceX, sourceY, 3, 0]; // Blue
+                    }
+                    else
+                    {
+                        // Sınır dışı durumda varsayılan değerler (siyah)
+                        croppedPixels[x, y, 0, 0] = 255; // Alpha (opak)
+                        croppedPixels[x, y, 1, 0] = 0;   // Red
+                        croppedPixels[x, y, 2, 0] = 0;   // Green
+                        croppedPixels[x, y, 3, 0] = 0;   // Blue
+                    }
+                }
+            }
+
+            // ADIM 3: Kırpılmış array'den yeni Bitmap oluştur
+            Bitmap resultBitmap = new Bitmap(cropWidth, cropHeight);
+            for (int x = 0; x < cropWidth; x++)
+            {
+                for (int y = 0; y < cropHeight; y++)
+                {
+                    byte alpha = croppedPixels[x, y, 0, 0];
+                    byte red = croppedPixels[x, y, 1, 0];
+                    byte green = croppedPixels[x, y, 2, 0];
+                    byte blue = croppedPixels[x, y, 3, 0];
+
+                    Color resultColor = Color.FromArgb(alpha, red, green, blue);
+                    resultBitmap.SetPixel(x, y, resultColor);
+                }
+            }
+
+            return resultBitmap;
+        }
     }
-} 
+}

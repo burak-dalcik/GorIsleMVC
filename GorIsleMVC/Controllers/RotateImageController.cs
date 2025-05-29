@@ -34,47 +34,38 @@ namespace GorIsleMVC.Controllers
                 return RedirectToAction(nameof(Upload));
             }
 
-            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
-            var uniqueFileName = $"rotated_{DateTime.Now:yyyyMMddHHmmss}.jpg";
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-            var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.jpg";
-            var originalPath = Path.Combine(uploadsFolder, originalFileName);
+            MemoryStream stream = null;
+            Image originalImage = null;
+            Bitmap bitmap = null;
+            Bitmap resultBitmap = null;
 
-            var tempPath = Path.GetTempFileName();
             try
             {
-                using (var stream = new FileStream(tempPath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
 
-                using (var originalImage = Image.FromFile(tempPath))
-                {
-   
-                    originalImage.Save(originalPath, ImageFormat.Jpeg);
+                var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-  
-                    using (var rotatedImage = new Bitmap(originalImage.Width, originalImage.Height))
-                    {
-                        using (Graphics g = Graphics.FromImage(rotatedImage))
-                        {
-                      
-                            g.TranslateTransform(rotatedImage.Width / 2, rotatedImage.Height / 2);
-   
-                            g.RotateTransform(angle);
-               
-                            g.TranslateTransform(-rotatedImage.Width / 2, -rotatedImage.Height / 2);
-                            
-                            g.DrawImage(originalImage, Point.Empty);
-                        }
+                stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                        rotatedImage.Save(filePath, ImageFormat.Jpeg);
-                    }
-                }
+                originalImage = Image.FromStream(stream);
+                originalImage.Save(originalPath, ImageFormat.Png);
 
-                TempData["ProcessedImage"] = uniqueFileName;
-                TempData["OriginalImage"] = originalFileName;
+                bitmap = new Bitmap(originalImage);
+                resultBitmap = ApplyRotation(bitmap, angle);
+
+                var resultFileName = $"rotated_{angle}deg_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                resultBitmap.Save(resultPath, ImageFormat.Png);
+
+                TempData["OriginalImage"] = "/uploads/" + originalFileName;
+                TempData["ProcessedImage"] = "/uploads/" + resultFileName;
                 TempData["Angle"] = angle;
+
                 return View("Result");
             }
             catch (Exception ex)
@@ -84,11 +75,111 @@ namespace GorIsleMVC.Controllers
             }
             finally
             {
-                if (System.IO.File.Exists(tempPath))
-                {
-                    System.IO.File.Delete(tempPath);
-                }
+                // Manuel cleanup işlemleri
+                stream?.Dispose();
+                originalImage?.Dispose();
+                bitmap?.Dispose();
+                resultBitmap?.Dispose();
             }
         }
+
+        private Bitmap ApplyRotation(Bitmap sourceBitmap, float angleDegrees)
+        {
+            int width = sourceBitmap.Width;
+            int height = sourceBitmap.Height;
+
+            // Açıyı radyana çevir
+            double angleRadians = angleDegrees * Math.PI / 180.0;
+            double cosTheta = Math.Cos(angleRadians);
+            double sinTheta = Math.Sin(angleRadians);
+
+            // Yeni boyutları hesapla (döndürülmüş görsel için gerekli alan)
+            int newWidth = (int)(Math.Abs(width * cosTheta) + Math.Abs(height * sinTheta)) + 1;
+            int newHeight = (int)(Math.Abs(width * sinTheta) + Math.Abs(height * cosTheta)) + 1;
+
+            // KENDİ ARRAY'LERİNİ OLUŞTUR - 4 boyutlu array [x, y, kanal, 1]
+            byte[,,,] sourcePixels = new byte[width, height, 4, 1];      // ARGB formatında orijinal
+            byte[,,,] resultPixels = new byte[newWidth, newHeight, 4, 1]; // Döndürülmüş sonuç
+
+            // ADIM 1: Orijinal görselin piksellerini array'e aktar
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Color pixel = sourceBitmap.GetPixel(x, y);
+                    sourcePixels[x, y, 0, 0] = pixel.A; // Alpha
+                    sourcePixels[x, y, 1, 0] = pixel.R; // Red
+                    sourcePixels[x, y, 2, 0] = pixel.G; // Green
+                    sourcePixels[x, y, 3, 0] = pixel.B; // Blue
+                }
+            }
+
+            // ADIM 2: Result array'ini şeffaf beyaz ile doldur
+            for (int x = 0; x < newWidth; x++)
+            {
+                for (int y = 0; y < newHeight; y++)
+                {
+                    resultPixels[x, y, 0, 0] = 255; // Alpha (opak)
+                    resultPixels[x, y, 1, 0] = 255; // Red (beyaz)
+                    resultPixels[x, y, 2, 0] = 255; // Green (beyaz)
+                    resultPixels[x, y, 3, 0] = 255; // Blue (beyaz)
+                }
+            }
+
+            // ADIM 3: Array üzerinde döndürme işlemi yap
+            // Merkez noktaları hesapla
+            double centerX = width / 2.0;
+            double centerY = height / 2.0;
+            double newCenterX = newWidth / 2.0;
+            double newCenterY = newHeight / 2.0;
+
+            // Her yeni piksel pozisyonu için orijinal pozisyonu hesapla (Inverse transformation)
+            for (int newX = 0; newX < newWidth; newX++)
+            {
+                for (int newY = 0; newY < newHeight; newY++)
+                {
+                    // Yeni koordinatları merkeze göre normalize et
+                    double relativeNewX = newX - newCenterX;
+                    double relativeNewY = newY - newCenterY;
+
+                    // Ters döndürme uygula (orijinal pozisyonu bul)
+                    double originalRelativeX = relativeNewX * cosTheta + relativeNewY * sinTheta;
+                    double originalRelativeY = -relativeNewX * sinTheta + relativeNewY * cosTheta;
+
+                    // Orijinal koordinat sistemine geri dönüştür
+                    int originalX = (int)Math.Round(originalRelativeX + centerX);
+                    int originalY = (int)Math.Round(originalRelativeY + centerY);
+
+                    // Orijinal sınırlar içinde mi kontrol et
+                    if (originalX >= 0 && originalX < width && originalY >= 0 && originalY < height)
+                    {
+                        // Array'den orijinal piksel değerlerini al ve yeni pozisyona kopyala
+                        resultPixels[newX, newY, 0, 0] = sourcePixels[originalX, originalY, 0, 0]; // Alpha
+                        resultPixels[newX, newY, 1, 0] = sourcePixels[originalX, originalY, 1, 0]; // Red
+                        resultPixels[newX, newY, 2, 0] = sourcePixels[originalX, originalY, 2, 0]; // Green
+                        resultPixels[newX, newY, 3, 0] = sourcePixels[originalX, originalY, 3, 0]; // Blue
+                    }
+                    // Sınırlar dışındaysa zaten beyaz ile doldurulmuş, değiştirme
+                }
+            }
+
+            // ADIM 4: Döndürülmüş array'den yeni Bitmap oluştur
+            Bitmap resultBitmap = new Bitmap(newWidth, newHeight);
+            for (int x = 0; x < newWidth; x++)
+            {
+                for (int y = 0; y < newHeight; y++)
+                {
+                    byte alpha = resultPixels[x, y, 0, 0];
+                    byte red = resultPixels[x, y, 1, 0];
+                    byte green = resultPixels[x, y, 2, 0];
+                    byte blue = resultPixels[x, y, 3, 0];
+
+                    Color resultColor = Color.FromArgb(alpha, red, green, blue);
+                    resultBitmap.SetPixel(x, y, resultColor);
+                }
+            }
+
+            return resultBitmap;
+        }
     }
-} 
+}
