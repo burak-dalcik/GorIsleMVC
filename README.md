@@ -1,9 +1,31 @@
-Bu proje, görüntü işleme tekniklerini temel alan bir MVC uygulamasıdır. Uygulama üzerinde, fotoğraflara yönelik çeşitli morfolojik işlemler gerçekleştirilebilmektedir. Bunlar arasında:
+# Görüntü İşleme MVC Projesi
 
-Görüntü üzerinde toplama ve çıkarma işlemleri,
+## 📌 Açıklama
+Bu proje, **görüntü işleme tekniklerini** temel alan bir **MVC uygulamasıdır**.  
+Uygulama üzerinden fotoğraflara yönelik çeşitli **morfolojik işlemler** yapılabilmektedir.  
 
-Gürültü ekleme ve gürültü azaltma yöntemleri,
+Gerçekleştirilebilen işlemlerden bazıları:
+- Görüntü üzerinde **toplama ve çıkarma** işlemleri  
+- **Gürültü ekleme**  
+- **Gürültü azaltma**  
+- Görüntü iyileştirme ve analiz adımları  
 
-Görüntülerin iyileştirilmesine ve analizine yönelik diğer temel görüntü işleme adımları
+## 🚀 Özellikler
+- Seçilen fotoğraf üzerinde gerçek zamanlı işleme  
+- Farklı filtre ve morfolojik operasyon desteği  
+- Kullanıcı dostu arayüz  
 
-yer almaktadır. Proje, kullanıcıların seçtikleri görseller üzerinde bu işlemleri kolaylıkla uygulayabilmelerini sağlamaktadır.
+## 🔧 Kullanılan Teknolojiler
+- ASP.NET MVC  
+- OpenCV / EmguCV (veya kullandığın kütüphane)  
+- C#  
+
+## ⚙️ Kurulum
+1. Bu projeyi klonlayın:  
+   ```bash
+   git clone https://github.com/kullaniciadi/proje-adi.git
+Visual Studio üzerinden açın.
+
+Gerekli bağımlılıkları yükleyin.
+
+Projeyi çalıştırın.
