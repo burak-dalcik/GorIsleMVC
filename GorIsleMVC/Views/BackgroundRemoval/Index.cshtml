@@ -1,0 +1,70 @@
+@{
+    ViewData["Title"] = "Arka Plan Çıkarma";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">@ViewData["Title"]</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+                    <form asp-action="ProcessImage" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label for="imageFile" class="form-label">Görüntü Seçin</label>
+                            <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" required>
+                            <div class="form-text">
+                                Beyaz veya çok açık renkteki arka planları otomatik olarak kaldırır.
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-eraser"></i> Arka Planı Çıkar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        if (!document.getElementById('fontawesome-css')) {
+            var link = document.createElement('link');
+            link.id = 'fontawesome-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+            document.head.appendChild(link);
+        }
+
+        document.getElementById('imageFile').addEventListener('change', function (e) {
+            if (e.target.files && e.target.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var preview = document.createElement('img');
+                    preview.src = e.target.result;
+                    preview.className = 'img-fluid mt-3 rounded';
+                    preview.style.maxHeight = '300px';
+
+                    var previewContainer = document.querySelector('.form-group');
+                    var existingPreview = previewContainer.querySelector('img');
+                    if (existingPreview) {
+                        previewContainer.removeChild(existingPreview);
+                    }
+                    previewContainer.appendChild(preview);
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+    </script>
+}
+

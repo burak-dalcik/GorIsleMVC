@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
@@ -82,6 +82,16 @@
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-controller="Morphology" asp-action="Index">Genişleme ve Aşınma</a></li>
                                 <li><a class="dropdown-item" asp-controller="Morphology" asp-action="Index">Açma ve Kapama</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Arka Plan İşlemleri -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="backgroundDropdown" role="button" data-bs-toggle="dropdown">
+                                Arka Plan
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="BackgroundRemoval" asp-action="Index">Arka Plan Çıkarma</a></li>
                             </ul>
                         </li>
                     </ul>
