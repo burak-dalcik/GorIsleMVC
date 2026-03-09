@@ -1,0 +1,17 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gorisle:latest
+    container_name: gorisle-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      - uploads_data:/app/wwwroot/uploads
+
+volumes:
+  uploads_data:
