@@ -1,36 +1,81 @@
-﻿@{
+@{
     ViewData["Title"] = "GÖRİŞLE - Görüntü İşleme Projesi";
 }
 
-<div class="container mt-5">
-    <div class="row align-items-center">
-        <!-- Sol -->
-        <div class="col-md-6 text-center border-end">
-            <img src="https://www.selcuk.edu.tr/img/logo_tr.png" alt="Selçuk Üniversitesi Logo" class="img-fluid mb-4" style="max-width: 200px;">
-            <h2 class="mb-4">SELÇUK ÜNİVERSİTESİ</h2>
-            <h3 class="mb-3">Teknoloji Fakültesi</h3>
-            <div class="mt-4">
-                <h4>GÖRÜNTÜ İŞLEME DERSİ</h4>
-                <h5>Final Projesi</h5>
+<div class="container py-5">
+    <!-- Hero -->
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-7 mb-4 mb-lg-0">
+            <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold px-3 py-2 rounded-pill">
+                Görüntü İşleme Platformu
+            </span>
+            <h1 class="display-5 fw-bold mt-4 mb-3">
+                GÖRİŞLE ile görüntüleri
+                <span class="text-primary">anında dönüştür</span>
+            </h1>
+            <p class="lead text-muted mb-4">
+                Gri tonlama, histogram, filtreleme, morfoloji ve arka plan çıkarma gibi pek çok işlemi
+                tek bir web arayüzü üzerinden hızlı ve anlaşılır şekilde uygulayın.
+            </p>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <a asp-controller="GrayImage" asp-action="Upload" class="btn btn-primary btn-lg px-4">
+                    Görüntü İşlemeye Başla
+                </a>
+                <a href="#features" class="btn btn-outline-secondary btn-lg px-4">
+                    Özellikleri Gör
+                </a>
             </div>
-            <div class="mt-4">
-                <h3 class="text-primary">GÖRİŞLE</h3>
-                <p class="text-muted">Görüntü İşleme İşlemlerini Gerçekleştiren Web Uygulaması</p>
+            <div class="d-flex flex-wrap gap-3 small text-muted">
+                <span><i class="bi bi-check-circle text-success me-1"></i>İstemci taraflı görsel yükleme</span>
+                <span><i class="bi bi-check-circle text-success me-1"></i>Akademik proje mantığıyla tasarlandı</span>
+                <span><i class="bi bi-check-circle text-success me-1"></i>Arka plan çıkarma API desteği</span>
             </div>
         </div>
-
-        <!-- Sağ  -->
-        <div class="col-md-6 text-center">
-            <div class="card">
-                <div class="card-body">                    
-                    <h4 class="card-title mb-4">Öğrenci</h4>
-                    <div class="student-info">
-                        <h3>ÖMER BURAK DALÇIK</h3>
-                        <hr class="my-4">
-                        <div class="text-start">
-                            <p><strong>Bölüm:</strong> Bilgisayar Mühendisliği</p>
-                            <p><strong>Öğretim Üyesi:</strong> Dr. Öğr. Üyesi İlkay ÇINAR</p>                            
-                            <p><strong>Dönem:</strong> 2024-2025 Bahar</p>
+        <div class="col-lg-5">
+            <div class="index-hero-card p-4 p-md-5 rounded-4 shadow-lg position-relative overflow-hidden">
+                <div class="position-absolute top-0 end-0 p-3 text-end small text-uppercase fw-semibold text-primary opacity-75">
+                    GÖRİŞLE
+                </div>
+                <h5 class="fw-bold mb-3">Örnek İşlemler</h5>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="index-mini-card p-3 rounded-3 h-100">
+                            <div class="fw-semibold mb-1">Temel İşlemler</div>
+                            <ul class="list-unstyled small mb-0">
+                                <li>• Gri Tonlama</li>
+                                <li>• İkili Dönüşüm</li>
+                                <li>• Döndürme / Kırpma</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="index-mini-card p-3 rounded-3 h-100">
+                            <div class="fw-semibold mb-1">Filtre &amp; Kenar</div>
+                            <ul class="list-unstyled small mb-0">
+                                <li>• Mean Filter</li>
+                                <li>• Prewitt Kenar</li>
+                                <li>• Unsharp Masking</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="index-mini-card p-3 rounded-3 h-100">
+                            <div class="fw-semibold mb-1">Arka Plan</div>
+                            <ul class="list-unstyled small mb-0">
+                                <li>• Arka plan çıkarma</li>
+                                <li>• Şeffaf PNG çıktısı</li>
+                                <li>• API ile entegrasyon</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="index-mini-card p-3 rounded-3 h-100">
+                            <div class="fw-semibold mb-1">Morfoloji &amp; Gürültü</div>
+                            <ul class="list-unstyled small mb-0">
+                                <li>• Genişleme / Aşınma</li>
+                                <li>• Açma / Kapama</li>
+                                <li>• Gürültü ekleme/silme</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -38,34 +83,184 @@
         </div>
     </div>
 
-    <!-- Alt Bilgi -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Menüden yapmak istediğiniz görüntü işleme operasyonunu seçebilirsiniz.
-                </h5>
+    <!-- Özellikler -->
+    <div id="features" class="mb-5">
+        <h2 class="h3 fw-bold text-center mb-3">Menüde Seni Neler Bekliyor?</h2>
+        <p class="text-muted text-center mb-4">
+            Üst menüden ulaşabileceğin başlıca görüntü işleme modülleri.
+        </p>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Temel İşlemler</h5>
+                        <p class="card-text small text-muted">
+                            Görselleri gri tonlamaya çevir, ikili (binary) forma getir, döndür, kırp ve yakınlaştır.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Gri Tonlama</li>
+                            <li>İkili Dönüşüm</li>
+                            <li>Döndürme &amp; Kırpma</li>
+                            <li>Yakınlaştırma</li>
+                            <li>Renk Uzayı dönüşümleri</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Histogram &amp; Kontrast</h5>
+                        <p class="card-text small text-muted">
+                            Görüntü dağılımını analiz et, parlaklık ve kontrastı kontrol ederek daha net sonuçlar üret.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Histogram hesaplama</li>
+                            <li>Aritmetik işlemler</li>
+                            <li>Kontrast iyileştirme</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Filtreleme &amp; Kenar</h5>
+                        <p class="card-text small text-muted">
+                            Gürültüyü azalt, kenarları ortaya çıkar ve keskinliği artır.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Mean Filter (konvolüsyon)</li>
+                            <li>Prewitt kenar bulma</li>
+                            <li>Unsharp Masking</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4 mt-1">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Eşikleme &amp; Gürültü</h5>
+                        <p class="card-text small text-muted">
+                            Piksel seviyesinde eşikleme yaparak arka plan/ön plan ayrımı ve test amaçlı gürültü ekleme.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Farklı eşikleme yöntemleri</li>
+                            <li>Gürültü ekleme ve filtreleme</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Morfolojik İşlemler</h5>
+                        <p class="card-text small text-muted">
+                            İkili görüntüler üzerinde şekil tabanlı işlemler ile nesneleri iyileştir.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Genişleme (Dilation)</li>
+                            <li>Aşınma (Erosion)</li>
+                            <li>Açma &amp; Kapama</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Arka Plan Çıkarma</h5>
+                        <p class="card-text small text-muted">
+                            Özellikle stüdyo tarzı görsellerde, nesnenin arkasındaki düz arka planı otomatik olarak kaldır.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Web arayüzü ile kullanım</li>
+                            <li>API endpoint ile harici proje entegrasyonu</li>
+                            <li>Şeffaf PNG çıktıları</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proje ve Bilgi Kartları -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3">Proje Hakkında</h5>
+                    <p class="text-muted small">
+                        GÖRİŞLE, temel görüntü işleme kavramlarını pratikte görmek ve farklı
+                        işlemlerin etkisini karşılaştırmak için hazırlanmış bir eğitim/deney aracı olarak
+                        tasarlanmıştır.
+                    </p>
+                    <ul class="small mb-0">
+                        <li>Modern ve sade bir web arayüzü</li>
+                        <li>Her işlem için ayrı sonuç ekranı ve indirme imkânı</li>
+                        <li>.NET Core MVC ile geliştirilen modüler yapı</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3">Proje Bilgileri</h5>
+                    <dl class="row small mb-0">
+                        <dt class="col-sm-4">Üniversite</dt>
+                        <dd class="col-sm-8">Selçuk Üniversitesi</dd>
+
+                        <dt class="col-sm-4">Fakülte</dt>
+                        <dd class="col-sm-8">Teknoloji Fakültesi</dd>
+
+                        <dt class="col-sm-4">Ders</dt>
+                        <dd class="col-sm-8">Görüntü İşleme</dd>
+
+                        <dt class="col-sm-4">Proje</dt>
+                        <dd class="col-sm-8">Final Projesi - GÖRİŞLE</dd>
+
+                        <dt class="col-sm-4">Öğrenci</dt>
+                        <dd class="col-sm-8">Ömer Burak Dalçık</dd>
+
+                        <dt class="col-sm-4">Öğretim Üyesi</dt>
+                        <dd class="col-sm-8">Dr. Öğr. Üyesi İlkay Çınar</dd>
+
+                        <dt class="col-sm-4">Dönem</dt>
+                        <dd class="col-sm-8">2024 - 2025 Bahar</dd>
+                    </dl>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .student-info {
-        padding: 20px;
+    .index-hero-card {
+        background: radial-gradient(circle at top left, rgba(43, 140, 238, 0.18), transparent 55%),
+                    radial-gradient(circle at bottom right, rgba(43, 140, 238, 0.12), transparent 55%),
+                    #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
     }
-    .border-end {
-        border-right: 2px solid #dee2e6;
+
+    .index-mini-card {
+        background-color: rgba(248, 249, 252, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.4);
     }
-    h2, h3, h4, h5 {
-        color: #2c3e50;
-    }
-    .text-primary {
-        color: #1a5f7a !important;
-    }
-    .card {
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
+    @@media (prefers-color-scheme: dark) {
+        .index-hero-card {
+            background: radial-gradient(circle at top left, rgba(43, 140, 238, 0.32), transparent 55%),
+                        radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.95), transparent 55%),
+                        #020617;
+            border-color: rgba(148, 163, 184, 0.4);
+        }
+
+        .index-mini-card {
+            background-color: rgba(15, 23, 42, 0.9);
+            border-color: rgba(148, 163, 184, 0.6);
+        }
     }
 </style>
