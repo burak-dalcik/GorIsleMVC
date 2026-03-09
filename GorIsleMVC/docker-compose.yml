@@ -7,7 +7,7 @@ services:
     container_name: gorisle-web
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "5101:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
     volumes:
