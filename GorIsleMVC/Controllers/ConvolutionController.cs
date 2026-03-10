@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -42,30 +42,21 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsPngAsync(originalPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            var resultBitmap = ApplyMean(bitmap, kernelSize);
+                using var resultBitmap = ApplyMean(originalImage, kernelSize);
+                var resultFileName = $"mean_filter_{kernelSize}x{kernelSize}_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                await resultBitmap.SaveAsPngAsync(resultPath);
 
-                            var resultFileName = $"mean_filter_{kernelSize}x{kernelSize}_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            resultBitmap.Save(resultPath, ImageFormat.Png);
-
-                            TempData["OriginalImage"] = "/uploads/" + originalFileName;
-                            TempData["ProcessedImage"] = "/uploads/" + resultFileName;
-                            TempData["KernelSize"] = kernelSize;
-                        }
-                    }
-                }
-
+                TempData["OriginalImage"] = "/uploads/" + originalFileName;
+                TempData["ProcessedImage"] = "/uploads/" + resultFileName;
+                TempData["KernelSize"] = kernelSize;
                 return View("Result");
             }
             catch (Exception ex)
@@ -75,65 +66,48 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap ApplyMean(Bitmap sourceBitmap, int kernelSize)
+        private static Image<Rgba32> ApplyMean(Image<Rgba32> source, int kernelSize)
         {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
-
-
+            int width = source.Width, height = source.Height;
+            var result = new Image<Rgba32>(width, height);
             int padding = kernelSize / 2;
 
-            // Her piksel için mean filter uygula
             for (int x = padding; x < width - padding; x++)
             {
                 for (int y = padding; y < height - padding; y++)
                 {
-                    double sumR = 0, sumG = 0, sumB = 0;
+                    long sumR = 0, sumG = 0, sumB = 0;
                     int count = 0;
-
-                    // Kernel içindeki pikselleri topla
                     for (int i = -padding; i <= padding; i++)
                     {
                         for (int j = -padding; j <= padding; j++)
                         {
-                            var pixel = sourceBitmap.GetPixel(x + i, y + j);
-                            sumR += pixel.R;
-                            sumG += pixel.G;
-                            sumB += pixel.B;
+                            var p = source[x + i, y + j];
+                            sumR += p.R; sumG += p.G; sumB += p.B;
                             count++;
                         }
                     }
-
-    
-                    int avgR = (int)(sumR / count);
-                    int avgG = (int)(sumG / count);
-                    int avgB = (int)(sumB / count);
-
-                    resultBitmap.SetPixel(x, y, Color.FromArgb(avgR, avgG, avgB));
+                    result[x, y] = new Rgba32((byte)(sumR / count), (byte)(sumG / count), (byte)(sumB / count), source[x, y].A);
                 }
             }
 
-            // Kenar pikselleri kopyala
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < padding; y++)
                 {
-                    resultBitmap.SetPixel(x, y, sourceBitmap.GetPixel(x, y));
-                    resultBitmap.SetPixel(x, height - 1 - y, sourceBitmap.GetPixel(x, height - 1 - y));
+                    result[x, y] = source[x, y];
+                    result[x, height - 1 - y] = source[x, height - 1 - y];
                 }
             }
-
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < padding; x++)
                 {
-                    resultBitmap.SetPixel(x, y, sourceBitmap.GetPixel(x, y));
-                    resultBitmap.SetPixel(width - 1 - x, y, sourceBitmap.GetPixel(width - 1 - x, y));
+                    result[x, y] = source[x, y];
+                    result[width - 1 - x, y] = source[width - 1 - x, y];
                 }
             }
-
-            return resultBitmap;
+            return result;
         }
     }
-} 
+}

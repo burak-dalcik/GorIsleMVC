@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using System.Globalization;
 
 namespace GorIsleMVC.Controllers
@@ -52,64 +52,34 @@ namespace GorIsleMVC.Controllers
             {
                 var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
                 if (!Directory.Exists(uploadsFolder))
-                {
                     Directory.CreateDirectory(uploadsFolder);
-                }
 
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var image = Image.FromStream(stream))
-                    {
-                        image.Save(originalPath, ImageFormat.Png);
+                using var image = await Image.LoadAsync<Rgba32>(stream);
+                await image.SaveAsPngAsync(originalPath);
 
-                        // Crop boyutlarını hesapla
-                        int cropWidth = (int)(image.Width / zoomValue);
-                        int cropHeight = (int)(image.Height / zoomValue);
+                int cropWidth = (int)(image.Width / zoomValue);
+                int cropHeight = (int)(image.Height / zoomValue);
+                int cropX = (image.Width - cropWidth) / 2;
+                int cropY = (image.Height - cropHeight) / 2;
+                var cropRect = new SixLabors.ImageSharp.Rectangle(cropX, cropY, cropWidth, cropHeight);
 
-                        // Merkezden kırp
-                        int cropX = (image.Width - cropWidth) / 2;
-                        int cropY = (image.Height - cropHeight) / 2;
-                        Rectangle cropRect = new Rectangle(cropX, cropY, cropWidth, cropHeight);
+                using var cropped = image.Clone(ctx => ctx.Crop(cropRect));
+                using var zoomedImage = cropped.Clone(ctx => ctx.Resize(image.Width, image.Height));
 
-                        using (var cropped = new Bitmap(cropWidth, cropHeight))
-                        {
-                            using (var g = Graphics.FromImage(cropped))
-                            {
-                                g.DrawImage(image, new Rectangle(0, 0, cropWidth, cropHeight), cropRect, GraphicsUnit.Pixel);
-                            }
+                var zoomedFileName = $"zoomed_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var zoomedPath = Path.Combine(uploadsFolder, zoomedFileName);
+                await zoomedImage.SaveAsPngAsync(zoomedPath);
 
-                            // Şimdi eski boyutlara yeniden ölçekle
-                            using (var zoomedImage = new Bitmap(image.Width, image.Height))
-                            {
-                                using (var graphics = Graphics.FromImage(zoomedImage))
-                                {
-                                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                                    graphics.SmoothingMode = SmoothingMode.HighQuality;
-                                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                                    graphics.CompositingQuality = CompositingQuality.HighQuality;
-
-                                    graphics.Clear(Color.Transparent);
-                                    graphics.DrawImage(cropped, 0, 0, image.Width, image.Height);
-                                }
-
-                                var zoomedFileName = $"zoomed_{DateTime.Now:yyyyMMddHHmmss}.png";
-                                var zoomedPath = Path.Combine(uploadsFolder, zoomedFileName);
-                                zoomedImage.Save(zoomedPath, ImageFormat.Png);
-
-                                TempData["ProcessedImage"] = zoomedFileName;
-                                TempData["OriginalImage"] = originalFileName;
-                                TempData["ZoomFactor"] = zoomValue;
-                            }
-                        }
-                    }
-                }
-
+                TempData["ProcessedImage"] = zoomedFileName;
+                TempData["OriginalImage"] = originalFileName;
+                TempData["ZoomFactor"] = zoomValue;
                 return View("Result");
             }
             catch (Exception ex)

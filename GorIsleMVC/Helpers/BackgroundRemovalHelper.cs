@@ -1,82 +1,67 @@
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Helpers
 {
     public static class BackgroundRemovalHelper
     {
-        public static Bitmap RemoveBackground(Bitmap original, byte threshold)
+        /// <summary>
+        /// ImageSharp kullanır; Windows ve Linux/Docker'da libgdiplus olmadan çalışır.
+        /// </summary>
+        public static Image<Rgba32> RemoveBackground(Image<Rgba32> original, byte threshold)
         {
             int width = original.Width;
             int height = original.Height;
 
-            var result = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-
-            long sumR = 0;
-            long sumG = 0;
-            long sumB = 0;
+            long sumR = 0, sumG = 0, sumB = 0;
             long count = 0;
 
             int step = Math.Max(1, Math.Min(width, height) / 100);
-            if (step < 2)
-            {
-                step = 2;
-            }
+            if (step < 2) step = 2;
 
             for (int x = 0; x < width; x += step)
             {
-                Color topPixel = original.GetPixel(x, 0);
-                Color bottomPixel = original.GetPixel(x, height - 1);
-
-                sumR += topPixel.R + bottomPixel.R;
-                sumG += topPixel.G + bottomPixel.G;
-                sumB += topPixel.B + bottomPixel.B;
+                var top = original[x, 0];
+                var bottom = original[x, height - 1];
+                sumR += top.R + bottom.R;
+                sumG += top.G + bottom.G;
+                sumB += top.B + bottom.B;
                 count += 2;
             }
 
             for (int y = 0; y < height; y += step)
             {
-                Color leftPixel = original.GetPixel(0, y);
-                Color rightPixel = original.GetPixel(width - 1, y);
-
-                sumR += leftPixel.R + rightPixel.R;
-                sumG += leftPixel.G + rightPixel.G;
-                sumB += leftPixel.B + rightPixel.B;
+                var left = original[0, y];
+                var right = original[width - 1, y];
+                sumR += left.R + right.R;
+                sumG += left.G + right.G;
+                sumB += left.B + right.B;
                 count += 2;
             }
 
             if (count == 0)
-            {
-                return original;
-            }
+                return original.Clone();
 
             byte bgR = (byte)(sumR / count);
             byte bgG = (byte)(sumG / count);
             byte bgB = (byte)(sumB / count);
 
-            int tolerance = threshold;
-            int toleranceSquared = tolerance * tolerance * 3;
+            int toleranceSquared = threshold * threshold * 3;
+
+            var result = new Image<Rgba32>(width, height);
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    Color pixel = original.GetPixel(x, y);
-
+                    var pixel = original[x, y];
                     int dR = pixel.R - bgR;
                     int dG = pixel.G - bgG;
                     int dB = pixel.B - bgB;
-
                     int distanceSquared = dR * dR + dG * dG + dB * dB;
 
-                    if (distanceSquared <= toleranceSquared)
-                    {
-                        result.SetPixel(x, y, Color.FromArgb(0, pixel.R, pixel.G, pixel.B));
-                    }
-                    else
-                    {
-                        result.SetPixel(x, y, Color.FromArgb(255, pixel.R, pixel.G, pixel.B));
-                    }
+                    byte a = (byte)(distanceSquared <= toleranceSquared ? 0 : 255);
+                    result[x, y] = new Rgba32(pixel.R, pixel.G, pixel.B, a);
                 }
             }
 
@@ -84,4 +69,3 @@ namespace GorIsleMVC.Helpers
         }
     }
 }
-

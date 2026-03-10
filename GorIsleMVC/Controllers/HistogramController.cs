@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -19,7 +19,7 @@ namespace GorIsleMVC.Controllers
         }
 
         [HttpPost]
-        public IActionResult Upload(IFormFile imageFile)
+        public async Task<IActionResult> Upload(IFormFile imageFile)
         {
             if (imageFile == null || imageFile.Length == 0)
             {
@@ -34,32 +34,28 @@ namespace GorIsleMVC.Controllers
             var uniqueFileName = Guid.NewGuid().ToString() + "_" + imageFile.FileName;
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            await using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
-                imageFile.CopyTo(fileStream);
+                await imageFile.CopyToAsync(fileStream);
             }
 
-            using (var bitmap = new Bitmap(filePath))
+            using (var image = await Image.LoadAsync<Rgba32>(filePath))
             {
+                int[] redHistogram = new int[256], greenHistogram = new int[256];
+                int[] blueHistogram = new int[256], grayHistogram = new int[256];
 
-                int[] redHistogram = new int[256];
-                int[] greenHistogram = new int[256];
-                int[] blueHistogram = new int[256];
-                int[] grayHistogram = new int[256];
-
-                for (int i = 0; i < bitmap.Width; i++)
+                for (int i = 0; i < image.Width; i++)
                 {
-                    for (int j = 0; j < bitmap.Height; j++)
+                    for (int j = 0; j < image.Height; j++)
                     {
-                        Color pixel = bitmap.GetPixel(i, j);
-                        redHistogram[pixel.R]++;
-                        greenHistogram[pixel.G]++;
-                        blueHistogram[pixel.B]++;
-                        int gray = (pixel.R + pixel.G + pixel.B) / 3;
+                        var p = image[i, j];
+                        redHistogram[p.R]++;
+                        greenHistogram[p.G]++;
+                        blueHistogram[p.B]++;
+                        int gray = (p.R + p.G + p.B) / 3;
                         grayHistogram[gray]++;
                     }
                 }
-
 
                 TempData["RedHistogram"] = string.Join(",", redHistogram);
                 TempData["GreenHistogram"] = string.Join(",", greenHistogram);
@@ -74,14 +70,12 @@ namespace GorIsleMVC.Controllers
         public IActionResult Result()
         {
             if (TempData["ImagePath"] == null)
-            {
                 return RedirectToAction("Index");
-            }
             return View();
         }
 
         [HttpPost]
-        public IActionResult Equalize(string imagePath)
+        public async Task<IActionResult> Equalize(string imagePath)
         {
             if (string.IsNullOrEmpty(imagePath))
             {
@@ -90,47 +84,48 @@ namespace GorIsleMVC.Controllers
             }
 
             var fullPath = Path.Combine(_hostEnvironment.WebRootPath, imagePath.TrimStart('/'));
+            if (!System.IO.File.Exists(fullPath))
+            {
+                TempData["Error"] = "Görüntü dosyası bulunamadı.";
+                return RedirectToAction("Index");
+            }
+
             var outputFileName = "equalized_" + Path.GetFileName(imagePath);
             var outputPath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", outputFileName);
 
-            using (var bitmap = new Bitmap(fullPath))
+            using (var bitmap = await Image.LoadAsync<Rgba32>(fullPath))
             {
-                // histogram eşitleme 
-                int[] histogram = new int[256];
-                int[] cdf = new int[256];
+                int[] histogram = new int[256], cdf = new int[256];
                 int totalPixels = bitmap.Width * bitmap.Height;
 
                 for (int i = 0; i < bitmap.Width; i++)
                 {
                     for (int j = 0; j < bitmap.Height; j++)
                     {
-                        Color pixel = bitmap.GetPixel(i, j);
-                        int gray = (pixel.R + pixel.G + pixel.B) / 3;
+                        var p = bitmap[i, j];
+                        int gray = (p.R + p.G + p.B) / 3;
                         histogram[gray]++;
                     }
                 }
 
-     
                 cdf[0] = histogram[0];
                 for (int i = 1; i < 256; i++)
-                {
                     cdf[i] = cdf[i - 1] + histogram[i];
-                }
 
-                // görüntüyü oluştur
-                Bitmap equalizedImage = new Bitmap(bitmap.Width, bitmap.Height);
+                var equalizedImage = new Image<Rgba32>(bitmap.Width, bitmap.Height);
                 for (int i = 0; i < bitmap.Width; i++)
                 {
                     for (int j = 0; j < bitmap.Height; j++)
                     {
-                        Color pixel = bitmap.GetPixel(i, j);
-                        int gray = (pixel.R + pixel.G + pixel.B) / 3;
+                        var p = bitmap[i, j];
+                        int gray = (p.R + p.G + p.B) / 3;
                         int newValue = (int)((cdf[gray] * 255.0) / totalPixels);
-                        equalizedImage.SetPixel(i, j, Color.FromArgb(newValue, newValue, newValue));
+                        byte n = (byte)Math.Clamp(newValue, 0, 255);
+                        equalizedImage[i, j] = new Rgba32(n, n, n, p.A);
                     }
                 }
-
-                equalizedImage.Save(outputPath, ImageFormat.Jpeg);
+                await equalizedImage.SaveAsJpegAsync(outputPath);
+                equalizedImage.Dispose();
             }
 
             TempData["OriginalImage"] = imagePath;
@@ -138,4 +133,4 @@ namespace GorIsleMVC.Controllers
             return RedirectToAction("Result");
         }
     }
-} 
+}

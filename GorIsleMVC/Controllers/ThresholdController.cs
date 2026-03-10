@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -42,31 +42,21 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsPngAsync(originalPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            // eşikleme 
-                            var resultBitmap = ApplyThreshold(bitmap, threshold);
+                using var resultBitmap = ApplyThreshold(originalImage, threshold);
+                var resultFileName = $"threshold_{threshold}_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                await resultBitmap.SaveAsPngAsync(resultPath);
 
-                            var resultFileName = $"threshold_{threshold}_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            resultBitmap.Save(resultPath, ImageFormat.Png);
-
-                            TempData["OriginalImage"] = "/uploads/" + originalFileName;
-                            TempData["ProcessedImage"] = "/uploads/" + resultFileName;
-                            TempData["Threshold"] = threshold;
-                        }
-                    }
-                }
-
+                TempData["OriginalImage"] = "/uploads/" + originalFileName;
+                TempData["ProcessedImage"] = "/uploads/" + resultFileName;
+                TempData["Threshold"] = threshold;
                 return View("Result");
             }
             catch (Exception ex)
@@ -76,30 +66,21 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap ApplyThreshold(Bitmap sourceBitmap, int threshold)
+        private static Image<Rgba32> ApplyThreshold(Image<Rgba32> source, int threshold)
         {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
-
-            // Her piksel için eşikleme uygula
+            int width = source.Width, height = source.Height;
+            var result = new Image<Rgba32>(width, height);
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    var pixel = sourceBitmap.GetPixel(x, y);
-                    
-                    // Gri tonlama değerini hesapla
-                    int grayValue = (int)((pixel.R + pixel.G + pixel.B) / 3.0);
-                    
-                    // Eşikleme uygula
-                    Color newColor = grayValue >= threshold ? Color.White : Color.Black;
-                    
-                    resultBitmap.SetPixel(x, y, newColor);
+                    var p = source[x, y];
+                    int gray = (p.R + p.G + p.B) / 3;
+                    byte v = (byte)(gray >= threshold ? 255 : 0);
+                    result[x, y] = new Rgba32(v, v, v, p.A);
                 }
             }
-
-            return resultBitmap;
+            return result;
         }
     }
-} 
+}

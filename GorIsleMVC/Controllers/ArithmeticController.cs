@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace GorIsleMVC.Controllers
 {
@@ -40,10 +40,8 @@ namespace GorIsleMVC.Controllers
                 {
                     await imageFile1.CopyToAsync(stream1);
                     stream1.Position = 0;
-                    using (var img1 = Image.FromStream(stream1))
-                    {
-                        img1.Save(image1Path, ImageFormat.Png);
-                    }
+                    using var img1 = await Image.LoadAsync<Rgba32>(stream1);
+                    await img1.SaveAsPngAsync(image1Path);
                 }
 
                 var image2FileName = $"arithmetic2_{DateTime.Now:yyyyMMddHHmmss}.png";
@@ -52,40 +50,31 @@ namespace GorIsleMVC.Controllers
                 {
                     await imageFile2.CopyToAsync(stream2);
                     stream2.Position = 0;
-                    using (var img2 = Image.FromStream(stream2))
-                    {
-                        img2.Save(image2Path, ImageFormat.Png);
-                    }
+                    using var img2 = await Image.LoadAsync<Rgba32>(stream2);
+                    await img2.SaveAsPngAsync(image2Path);
                 }
 
-                using (var bitmap1 = new Bitmap(image1Path))
-                using (var bitmap2 = new Bitmap(image2Path))
-                {
-                    int maxWidth = Math.Max(bitmap1.Width, bitmap2.Width);
-                    int maxHeight = Math.Max(bitmap1.Height, bitmap2.Height);
+                using var bitmap1 = await Image.LoadAsync<Rgba32>(image1Path);
+                using var bitmap2 = await Image.LoadAsync<Rgba32>(image2Path);
 
-                    using (var resized1 = ResizeImage(bitmap1, maxWidth, maxHeight))
-                    using (var resized2 = ResizeImage(bitmap2, maxWidth, maxHeight))
-                    {
-                        var resultFileName = $"result_{DateTime.Now:yyyyMMddHHmmss}.png";
-                        var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                int maxWidth = Math.Max(bitmap1.Width, bitmap2.Width);
+                int maxHeight = Math.Max(bitmap1.Height, bitmap2.Height);
 
-                        // Aritmetik işlemin uygulanması
-                        using (var resultImage = ApplyArithmeticOperation(resized1, resized2, operation))
-                        {
-                            resultImage.Save(resultPath, ImageFormat.Png);
+                using var resized1 = bitmap1.Clone(ctx => ctx.Resize(maxWidth, maxHeight));
+                using var resized2 = bitmap2.Clone(ctx => ctx.Resize(maxWidth, maxHeight));
 
-                            TempData["Image1"] = $"/uploads/{image1FileName}";
-                            TempData["Image2"] = $"/uploads/{image2FileName}";
-                            TempData["Result"] = $"/uploads/{resultFileName}";
-                            TempData["Operation"] = operation;
-                            TempData["ProcessType"] = "Görüntü Aritmetik İşlemi";
-                            TempData["OriginalSizes"] = $"Görüntü 1: {bitmap1.Width}x{bitmap1.Height}, Görüntü 2: {bitmap2.Width}x{bitmap2.Height}";
-                            TempData["FinalSize"] = $"İşlem Boyutu: {maxWidth}x{maxHeight}";
-                        }
-                    }
-                }
+                using var resultImage = ApplyArithmeticOperation(resized1, resized2, operation);
+                var resultFileName = $"result_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                await resultImage.SaveAsPngAsync(resultPath);
 
+                TempData["Image1"] = $"/uploads/{image1FileName}";
+                TempData["Image2"] = $"/uploads/{image2FileName}";
+                TempData["Result"] = $"/uploads/{resultFileName}";
+                TempData["Operation"] = operation;
+                TempData["ProcessType"] = "Görüntü Aritmetik İşlemi";
+                TempData["OriginalSizes"] = $"Görüntü 1: {bitmap1.Width}x{bitmap1.Height}, Görüntü 2: {bitmap2.Width}x{bitmap2.Height}";
+                TempData["FinalSize"] = $"İşlem Boyutu: {maxWidth}x{maxHeight}";
                 return View("Result");
             }
             catch (Exception ex)
@@ -95,71 +84,46 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap ResizeImage(Image image, int width, int height)
+        private static Image<Rgba32> ApplyArithmeticOperation(Image<Rgba32> image1, Image<Rgba32> image2, string operation)
         {
-            var result = new Bitmap(width, height);
-            using (var graphics = Graphics.FromImage(result))
-            {
-                // yüksek kaliteli yeniden boyutlandırma ayarları
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                graphics.DrawImage(image, 0, 0, width, height);
-            }
-            return result;
-        }
-
-        private Bitmap ApplyArithmeticOperation(Bitmap image1, Bitmap image2, string operation)
-        {
-            int width = image1.Width;
-            int height = image1.Height;
-            Bitmap result = new Bitmap(width, height);
-
+            int width = image1.Width, height = image1.Height;
+            var result = new Image<Rgba32>(width, height);
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    Color pixel1 = image1.GetPixel(x, y);
-                    Color pixel2 = image2.GetPixel(x, y);
-
+                    var p1 = image1[x, y];
+                    var p2 = image2[x, y];
                     int r, g, b;
                     switch (operation.ToLower())
                     {
                         case "add":
-                            r = Math.Min(255, pixel1.R + pixel2.R);
-                            g = Math.Min(255, pixel1.G + pixel2.G);
-                            b = Math.Min(255, pixel1.B + pixel2.B);
+                            r = Math.Min(255, p1.R + p2.R);
+                            g = Math.Min(255, p1.G + p2.G);
+                            b = Math.Min(255, p1.B + p2.B);
                             break;
-
                         case "subtract":
-                            r = Math.Max(0, pixel1.R - pixel2.R);
-                            g = Math.Max(0, pixel1.G - pixel2.G);
-                            b = Math.Max(0, pixel1.B - pixel2.B);
+                            r = Math.Max(0, p1.R - p2.R);
+                            g = Math.Max(0, p1.G - p2.G);
+                            b = Math.Max(0, p1.B - p2.B);
                             break;
-
                         case "multiply":
-                            r = Math.Min(255, (pixel1.R * pixel2.R) / 255);
-                            g = Math.Min(255, (pixel1.G * pixel2.G) / 255);
-                            b = Math.Min(255, (pixel1.B * pixel2.B) / 255);
+                            r = Math.Min(255, (p1.R * p2.R) / 255);
+                            g = Math.Min(255, (p1.G * p2.G) / 255);
+                            b = Math.Min(255, (p1.B * p2.B) / 255);
                             break;
-
                         case "average":
-                            r = (pixel1.R + pixel2.R) / 2;
-                            g = (pixel1.G + pixel2.G) / 2;
-                            b = (pixel1.B + pixel2.B) / 2;
+                            r = (p1.R + p2.R) / 2;
+                            g = (p1.G + p2.G) / 2;
+                            b = (p1.B + p2.B) / 2;
                             break;
-
                         default:
                             throw new ArgumentException("Geçersiz işlem türü");
                     }
-
-                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
+                    result[x, y] = new Rgba32((byte)r, (byte)g, (byte)b, p1.A);
                 }
             }
-
             return result;
         }
     }
-} 
+}

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -36,31 +36,22 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsPngAsync(originalPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            var processedImage = AdjustContrast(bitmap, contrast);
+                using var processedImage = AdjustContrast(originalImage, contrast);
+                var resultFileName = $"contrast_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                await processedImage.SaveAsPngAsync(resultPath);
 
-                            var resultFileName = $"contrast_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            processedImage.Save(resultPath, ImageFormat.Png);
-
-                            TempData["OriginalImage"] = $"/uploads/{originalFileName}";
-                            TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
-                            TempData["ProcessType"] = "Kontrast Ayarlama";
-                            TempData["Parameters"] = $"Kontrast Değeri: {contrast:F2}";
-                        }
-                    }
-                }
-
+                TempData["OriginalImage"] = $"/uploads/{originalFileName}";
+                TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
+                TempData["ProcessType"] = "Kontrast Ayarlama";
+                TempData["Parameters"] = $"Kontrast Değeri: {contrast:F2}";
                 return View("Result");
             }
             catch (Exception ex)
@@ -70,36 +61,24 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap AdjustContrast(Bitmap original, double contrast)
+        private static Image<Rgba32> AdjustContrast(Image<Rgba32> original, double contrast)
         {
-            int width = original.Width;
-            int height = original.Height;
-            Bitmap result = new Bitmap(width, height);
-
+            int width = original.Width, height = original.Height;
             double factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-            int[] lookupTable = new int[256];
+            int[] lut = new int[256];
             for (int i = 0; i < 256; i++)
-            {
-                double temp = factor * (i - 128) + 128;
-                lookupTable[i] = (int)Math.Min(255, Math.Max(0, temp));
-            }
+                lut[i] = (int)Math.Clamp(factor * (i - 128) + 128, 0, 255);
 
-            for (int x = 0; x < width; x++)
+            var result = new Image<Rgba32>(width, height);
+            for (int y = 0; y < height; y++)
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    Color pixel = original.GetPixel(x, y);
-                    
-                    int r = lookupTable[pixel.R];
-                    int g = lookupTable[pixel.G];
-                    int b = lookupTable[pixel.B];
-
-                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
+                    var p = original[x, y];
+                    result[x, y] = new Rgba32((byte)lut[p.R], (byte)lut[p.G], (byte)lut[p.B], p.A);
                 }
             }
-
             return result;
         }
     }
-} 
+}

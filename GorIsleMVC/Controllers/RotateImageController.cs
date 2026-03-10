@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace GorIsleMVC.Controllers
 {
@@ -35,42 +36,25 @@ namespace GorIsleMVC.Controllers
             }
 
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
             var uniqueFileName = $"rotated_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-            var tempPath = Path.GetTempFileName();
             try
             {
-                using (var stream = new FileStream(tempPath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                using (var originalImage = Image.FromFile(tempPath))
-                {
-   
-                    originalImage.Save(originalPath, ImageFormat.Jpeg);
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsJpegAsync(originalPath);
 
-  
-                    using (var rotatedImage = new Bitmap(originalImage.Width, originalImage.Height))
-                    {
-                        using (Graphics g = Graphics.FromImage(rotatedImage))
-                        {
-                      
-                            g.TranslateTransform(rotatedImage.Width / 2, rotatedImage.Height / 2);
-   
-                            g.RotateTransform(angle);
-               
-                            g.TranslateTransform(-rotatedImage.Width / 2, -rotatedImage.Height / 2);
-                            
-                            g.DrawImage(originalImage, Point.Empty);
-                        }
-
-                        rotatedImage.Save(filePath, ImageFormat.Jpeg);
-                    }
-                }
+                using var rotatedImage = originalImage.Clone(ctx => ctx.Rotate(angle));
+                await rotatedImage.SaveAsJpegAsync(filePath);
 
                 TempData["ProcessedImage"] = uniqueFileName;
                 TempData["OriginalImage"] = originalFileName;
@@ -82,13 +66,6 @@ namespace GorIsleMVC.Controllers
                 TempData["Error"] = $"Görsel işlenirken bir hata oluştu: {ex.Message}";
                 return RedirectToAction(nameof(Upload));
             }
-            finally
-            {
-                if (System.IO.File.Exists(tempPath))
-                {
-                    System.IO.File.Delete(tempPath);
-                }
-            }
         }
     }
-} 
+}

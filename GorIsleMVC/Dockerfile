@@ -8,16 +8,9 @@ RUN dotnet restore
 COPY . .
 RUN dotnet publish "GorIsleMVC.csproj" -c Release -o /app/publish --no-restore
 
-# Runtime stage
+# Runtime stage (ImageSharp kullanıldığı için libgdiplus gerekmez)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgdiplus \
-    libc6-dev \
-    fontconfig \
-    && ln -s /usr/lib/libgdiplus.so /usr/lib/gdiplus.dll \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish .
 

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -36,225 +36,172 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
+
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsPngAsync(originalPath);
+
+                Image<Rgba32> resultBitmap = operation.ToLower() switch
                 {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                    "dilation" => isColorImage ? ApplyColorDilation(originalImage, kernelSize) : ApplyDilation(originalImage, kernelSize),
+                    "erosion" => isColorImage ? ApplyColorErosion(originalImage, kernelSize) : ApplyErosion(originalImage, kernelSize),
+                    "opening" => isColorImage ? ApplyColorOpening(originalImage, kernelSize) : ApplyOpening(originalImage, kernelSize),
+                    "closing" => isColorImage ? ApplyColorClosing(originalImage, kernelSize) : ApplyClosing(originalImage, kernelSize),
+                    _ => throw new ArgumentException("Geçersiz morfolojik işlem.")
+                };
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                using (resultBitmap)
+                {
+                    var resultFileName = $"morphology_{operation}_{kernelSize}_{DateTime.Now:yyyyMMddHHmmss}.png";
+                    var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                    await resultBitmap.SaveAsPngAsync(resultPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            // Morfolojik işlemi uygula
-                            var resultBitmap = operation.ToLower() switch
-                            {
-                                "dilation" => isColorImage ? ApplyColorDilation(bitmap, kernelSize) : ApplyDilation(bitmap, kernelSize),
-                                "erosion" => isColorImage ? ApplyColorErosion(bitmap, kernelSize) : ApplyErosion(bitmap, kernelSize),
-                                "opening" => isColorImage ? ApplyColorOpening(bitmap, kernelSize) : ApplyOpening(bitmap, kernelSize),
-                                "closing" => isColorImage ? ApplyColorClosing(bitmap, kernelSize) : ApplyClosing(bitmap, kernelSize),
-                                _ => throw new ArgumentException("Geçersiz morfolojik işlem.")
-                            };
-
-                            // Sonucu kaydet
-                            var resultFileName = $"morphology_{operation}_{kernelSize}_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            resultBitmap.Save(resultPath, ImageFormat.Png);
-
-                            TempData["OriginalImage"] = "/uploads/" + originalFileName;
-                            TempData["ProcessedImage"] = "/uploads/" + resultFileName;
-                            TempData["Operation"] = operation;
-                            TempData["KernelSize"] = kernelSize;
-                            TempData["IsColorImage"] = isColorImage;
-                        }
-                    }
+                    TempData["OriginalImage"] = "/uploads/" + originalFileName;
+                    TempData["ProcessedImage"] = "/uploads/" + resultFileName;
+                    TempData["Operation"] = operation;
+                    TempData["KernelSize"] = kernelSize;
+                    TempData["IsColorImage"] = isColorImage;
                 }
-
                 return View("Result");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Görsel işlenirken bir hata oluştu: {ex.Message}";
+                TempData["Error"] = $"Görüntü işlenirken bir hata oluştu: {ex.Message}";
                 return RedirectToAction("Index");
             }
         }
 
-        private Bitmap ApplyColorDilation(Bitmap sourceBitmap, int kernelSize)
+        private static Image<Rgba32> ApplyColorDilation(Image<Rgba32> source, int kernelSize)
         {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
+            int width = source.Width, height = source.Height;
+            var result = source.Clone();
             int offset = kernelSize / 2;
-
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
                     int maxR = 0, maxG = 0, maxB = 0;
-
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
                         {
-                            var pixel = sourceBitmap.GetPixel(x + i, y + j);
-                            maxR = Math.Max(maxR, pixel.R);
-                            maxG = Math.Max(maxG, pixel.G);
-                            maxB = Math.Max(maxB, pixel.B);
+                            var p = source[x + i, y + j];
+                            maxR = Math.Max(maxR, p.R); maxG = Math.Max(maxG, p.G); maxB = Math.Max(maxB, p.B);
                         }
                     }
-
-                    resultBitmap.SetPixel(x, y, Color.FromArgb(maxR, maxG, maxB));
+                    result[x, y] = new Rgba32((byte)maxR, (byte)maxG, (byte)maxB, source[x, y].A);
                 }
             }
-
-            return resultBitmap;
+            return result;
         }
 
-        private Bitmap ApplyColorErosion(Bitmap sourceBitmap, int kernelSize)
+        private static Image<Rgba32> ApplyColorErosion(Image<Rgba32> source, int kernelSize)
         {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
+            int width = source.Width, height = source.Height;
+            var result = source.Clone();
             int offset = kernelSize / 2;
-
             for (int x = offset; x < width - offset; x++)
             {
                 for (int y = offset; y < height - offset; y++)
                 {
                     int minR = 255, minG = 255, minB = 255;
-
                     for (int i = -offset; i <= offset; i++)
                     {
                         for (int j = -offset; j <= offset; j++)
                         {
-                            var pixel = sourceBitmap.GetPixel(x + i, y + j);
-                            minR = Math.Min(minR, pixel.R);
-                            minG = Math.Min(minG, pixel.G);
-                            minB = Math.Min(minB, pixel.B);
+                            var p = source[x + i, y + j];
+                            minR = Math.Min(minR, p.R); minG = Math.Min(minG, p.G); minB = Math.Min(minB, p.B);
                         }
                     }
-
-                    resultBitmap.SetPixel(x, y, Color.FromArgb(minR, minG, minB));
+                    result[x, y] = new Rgba32((byte)minR, (byte)minG, (byte)minB, source[x, y].A);
                 }
             }
-
-            return resultBitmap;
+            return result;
         }
 
-        private Bitmap ApplyColorOpening(Bitmap sourceBitmap, int kernelSize)
+        private static Image<Rgba32> ApplyColorOpening(Image<Rgba32> source, int kernelSize)
         {
-            var erodedImage = ApplyColorErosion(sourceBitmap, kernelSize);
-            return ApplyColorDilation(erodedImage, kernelSize);
+            using var eroded = ApplyColorErosion(source, kernelSize);
+            return ApplyColorDilation(eroded, kernelSize);
         }
 
-        private Bitmap ApplyColorClosing(Bitmap sourceBitmap, int kernelSize)
+        private static Image<Rgba32> ApplyColorClosing(Image<Rgba32> source, int kernelSize)
         {
-            var dilatedImage = ApplyColorDilation(sourceBitmap, kernelSize);
-            return ApplyColorErosion(dilatedImage, kernelSize);
+            using var dilated = ApplyColorDilation(source, kernelSize);
+            return ApplyColorErosion(dilated, kernelSize);
         }
 
-        private Bitmap ApplyDilation(Bitmap sourceBitmap, int kernelSize)
+        private static Image<Rgba32> ConvertToBinary(Image<Rgba32> source, int threshold = 128)
         {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
-            int offset = kernelSize / 2;
-
-            var binaryBitmap = ConvertToBinary(sourceBitmap);
-
-            for (int x = offset; x < width - offset; x++)
-            {
-                for (int y = offset; y < height - offset; y++)
-                {
-                    bool hasWhitePixel = false;
-
-                    for (int i = -offset; i <= offset; i++)
-                    {
-                        for (int j = -offset; j <= offset; j++)
-                        {
-                            var pixel = binaryBitmap.GetPixel(x + i, y + j);
-                            if (pixel.R == 255) 
-                            {
-                                hasWhitePixel = true;
-                                break;
-                            }
-                        }
-                        if (hasWhitePixel) break;
-                    }
-
-                    resultBitmap.SetPixel(x, y, hasWhitePixel ? Color.White : Color.Black);
-                }
-            }
-
-            return resultBitmap;
-        }
-
-        private Bitmap ApplyErosion(Bitmap sourceBitmap, int kernelSize)
-        {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
-            int offset = kernelSize / 2;
-
-            var binaryBitmap = ConvertToBinary(sourceBitmap);
-
-            // Aşınma işlemi
-            for (int x = offset; x < width - offset; x++)
-            {
-                for (int y = offset; y < height - offset; y++)
-                {
-                    bool allWhitePixels = true;
-
-                    for (int i = -offset; i <= offset && allWhitePixels; i++)
-                    {
-                        for (int j = -offset; j <= offset && allWhitePixels; j++)
-                        {
-                            var pixel = binaryBitmap.GetPixel(x + i, y + j);
-                            if (pixel.R == 0) 
-                            {
-                                allWhitePixels = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    resultBitmap.SetPixel(x, y, allWhitePixels ? Color.White : Color.Black);
-                }
-            }
-
-            return resultBitmap;
-        }
-
-        private Bitmap ApplyOpening(Bitmap sourceBitmap, int kernelSize)
-        {
-            var erodedImage = ApplyErosion(sourceBitmap, kernelSize);
-            return ApplyDilation(erodedImage, kernelSize);
-        }
-
-        private Bitmap ApplyClosing(Bitmap sourceBitmap, int kernelSize)
-        {
-            var dilatedImage = ApplyDilation(sourceBitmap, kernelSize);
-            return ApplyErosion(dilatedImage, kernelSize);
-        }
-
-        private Bitmap ConvertToBinary(Bitmap sourceBitmap, int threshold = 128)
-        {
-            int width = sourceBitmap.Width;
-            int height = sourceBitmap.Height;
-            var resultBitmap = new Bitmap(width, height);
-
+            int width = source.Width, height = source.Height;
+            var result = new Image<Rgba32>(width, height);
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    var pixel = sourceBitmap.GetPixel(x, y);
-                    int grayValue = (int)((pixel.R + pixel.G + pixel.B) / 3.0);
-                    resultBitmap.SetPixel(x, y, grayValue >= threshold ? Color.White : Color.Black);
+                    var p = source[x, y];
+                    int gray = (p.R + p.G + p.B) / 3;
+                    byte v = (byte)(gray >= threshold ? 255 : 0);
+                    result[x, y] = new Rgba32(v, v, v, p.A);
                 }
             }
+            return result;
+        }
 
-            return resultBitmap;
+        private static Image<Rgba32> ApplyDilation(Image<Rgba32> source, int kernelSize)
+        {
+            int width = source.Width, height = source.Height;
+            using var binary = ConvertToBinary(source);
+            var result = binary.Clone();
+            int offset = kernelSize / 2;
+            for (int x = offset; x < width - offset; x++)
+            {
+                for (int y = offset; y < height - offset; y++)
+                {
+                    bool hasWhite = false;
+                    for (int i = -offset; i <= offset && !hasWhite; i++)
+                        for (int j = -offset; j <= offset && !hasWhite; j++)
+                            if (binary[x + i, y + j].R == 255) hasWhite = true;
+                    byte v = (byte)(hasWhite ? 255 : 0);
+                    result[x, y] = new Rgba32(v, v, v, source[x, y].A);
+                }
+            }
+            return result;
+        }
+
+        private static Image<Rgba32> ApplyErosion(Image<Rgba32> source, int kernelSize)
+        {
+            int width = source.Width, height = source.Height;
+            using var binary = ConvertToBinary(source);
+            var result = binary.Clone();
+            int offset = kernelSize / 2;
+            for (int x = offset; x < width - offset; x++)
+            {
+                for (int y = offset; y < height - offset; y++)
+                {
+                    bool allWhite = true;
+                    for (int i = -offset; i <= offset && allWhite; i++)
+                        for (int j = -offset; j <= offset && allWhite; j++)
+                            if (binary[x + i, y + j].R == 0) allWhite = false;
+                    byte v = (byte)(allWhite ? 255 : 0);
+                    result[x, y] = new Rgba32(v, v, v, source[x, y].A);
+                }
+            }
+            return result;
+        }
+
+        private static Image<Rgba32> ApplyOpening(Image<Rgba32> source, int kernelSize)
+        {
+            using var eroded = ApplyErosion(source, kernelSize);
+            return ApplyDilation(eroded, kernelSize);
+        }
+
+        private static Image<Rgba32> ApplyClosing(Image<Rgba32> source, int kernelSize)
+        {
+            using var dilated = ApplyDilation(source, kernelSize);
+            return ApplyErosion(dilated, kernelSize);
         }
     }
-} 
+}

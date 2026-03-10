@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -36,31 +36,22 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsPngAsync(originalPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            var processedImage = ApplyUnsharpMask(bitmap, amount, threshold);
+                using var processedImage = ApplyUnsharpMask(originalImage, amount, threshold);
+                var resultFileName = $"unsharp_{DateTime.Now:yyyyMMddHHmmss}.png";
+                var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                await processedImage.SaveAsPngAsync(resultPath);
 
-                            var resultFileName = $"unsharp_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            processedImage.Save(resultPath, ImageFormat.Png);
-
-                            TempData["OriginalImage"] = $"/uploads/{originalFileName}";
-                            TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
-                            TempData["ProcessType"] = "Unsharp Masking";
-                            TempData["Parameters"] = $"Amount: {amount}, Threshold: {threshold}";
-                        }
-                    }
-                }
-
+                TempData["OriginalImage"] = $"/uploads/{originalFileName}";
+                TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
+                TempData["ProcessType"] = "Unsharp Masking";
+                TempData["Parameters"] = $"Amount: {amount}, Threshold: {threshold}";
                 return View("Result");
             }
             catch (Exception ex)
@@ -70,97 +61,53 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap ApplyUnsharpMask(Bitmap original, float amount, float threshold)
+        private static Image<Rgba32> ApplyUnsharpMask(Image<Rgba32> original, float amount, float threshold)
         {
-            int width = original.Width;
-            int height = original.Height;
-            
-            // Gaussian Blur için kernel
-            float[,] kernel = {
-                { 1/16f, 2/16f, 1/16f },
-                { 2/16f, 4/16f, 2/16f },
-                { 1/16f, 2/16f, 1/16f }
-            };
+            int width = original.Width, height = original.Height;
+            float[,] kernel = { { 1/16f, 2/16f, 1/16f }, { 2/16f, 4/16f, 2/16f }, { 1/16f, 2/16f, 1/16f } };
 
-            // Blur uygulanmış kopya oluştur
-            Bitmap blurred = new Bitmap(width, height);
-            
-            // Gaussian Blur uygula
+            var blurred = new Image<Rgba32>(width, height);
             for (int y = 1; y < height - 1; y++)
             {
                 for (int x = 1; x < width - 1; x++)
                 {
                     float rSum = 0, gSum = 0, bSum = 0;
-
                     for (int ky = -1; ky <= 1; ky++)
                     {
                         for (int kx = -1; kx <= 1; kx++)
                         {
-                            Color pixel = original.GetPixel(x + kx, y + ky);
-                            float weight = kernel[ky + 1, kx + 1];
-
-                            rSum += pixel.R * weight;
-                            gSum += pixel.G * weight;
-                            bSum += pixel.B * weight;
+                            var p = original[x + kx, y + ky];
+                            float w = kernel[ky + 1, kx + 1];
+                            rSum += p.R * w; gSum += p.G * w; bSum += p.B * w;
                         }
                     }
-
-                    int r = Math.Min(255, Math.Max(0, (int)rSum));
-                    int g = Math.Min(255, Math.Max(0, (int)gSum));
-                    int b = Math.Min(255, Math.Max(0, (int)bSum));
-
-                    blurred.SetPixel(x, y, Color.FromArgb(r, g, b));
+                    blurred[x, y] = new Rgba32((byte)Math.Clamp((int)rSum, 0, 255), (byte)Math.Clamp((int)gSum, 0, 255), (byte)Math.Clamp((int)bSum, 0, 255), original[x, y].A);
                 }
             }
 
-            Bitmap result = new Bitmap(width, height);
-
-            // Unsharp Mask uygula
+            var result = new Image<Rgba32>(width, height);
             for (int y = 1; y < height - 1; y++)
             {
                 for (int x = 1; x < width - 1; x++)
                 {
-                    Color originalPixel = original.GetPixel(x, y);
-                    Color blurredPixel = blurred.GetPixel(x, y);
-
-                    
-                    int diffR = originalPixel.R - blurredPixel.R;
-                    int diffG = originalPixel.G - blurredPixel.G;
-                    int diffB = originalPixel.B - blurredPixel.B;
-
-                    // Threshold kontrolü
+                    var op = original[x, y];
+                    var bp = blurred[x, y];
+                    int diffR = op.R - bp.R, diffG = op.G - bp.G, diffB = op.B - bp.B;
                     if (Math.Abs(diffR) > threshold || Math.Abs(diffG) > threshold || Math.Abs(diffB) > threshold)
                     {
-                        // Keskinleştirme uygula
-                        int newR = Math.Min(255, Math.Max(0, originalPixel.R + (int)(diffR * amount)));
-                        int newG = Math.Min(255, Math.Max(0, originalPixel.G + (int)(diffG * amount)));
-                        int newB = Math.Min(255, Math.Max(0, originalPixel.B + (int)(diffB * amount)));
-
-                        result.SetPixel(x, y, Color.FromArgb(newR, newG, newB));
+                        int r = Math.Clamp(op.R + (int)(diffR * amount), 0, 255);
+                        int g = Math.Clamp(op.G + (int)(diffG * amount), 0, 255);
+                        int b = Math.Clamp(op.B + (int)(diffB * amount), 0, 255);
+                        result[x, y] = new Rgba32((byte)r, (byte)g, (byte)b, op.A);
                     }
                     else
-                    {
-                        // Threshold altındaki pikselleri kopyala
-                        result.SetPixel(x, y, originalPixel);
-                    }
+                        result[x, y] = op;
                 }
             }
-
-            // Kenar pikselleri kopyala
-            for (int x = 0; x < width; x++)
-            {
-                result.SetPixel(x, 0, original.GetPixel(x, 0));
-                result.SetPixel(x, height - 1, original.GetPixel(x, height - 1));
-            }
-
-            for (int y = 0; y < height; y++)
-            {
-                result.SetPixel(0, y, original.GetPixel(0, y));
-                result.SetPixel(width - 1, y, original.GetPixel(width - 1, y));
-            }
-
+            for (int x = 0; x < width; x++) { result[x, 0] = original[x, 0]; result[x, height - 1] = original[x, height - 1]; }
+            for (int y = 0; y < height; y++) { result[0, y] = original[0, y]; result[width - 1, y] = original[width - 1, y]; }
             blurred.Dispose();
             return result;
         }
     }
-} 
+}

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
 using GorIsleMVC.Helpers;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -57,14 +57,13 @@ namespace GorIsleMVC.Controllers
                     await imageFile.CopyToAsync(stream);
                     stream.Position = 0;
 
-                    using (var originalImage = Image.FromStream(stream))
+                    using (var originalImage = await Image.LoadAsync<Rgba32>(stream))
                     {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                        await originalImage.SaveAsPngAsync(originalPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        using (var processedImage = BackgroundRemovalHelper.RemoveBackground(bitmap, threshold))
+                        using (var processedImage = BackgroundRemovalHelper.RemoveBackground(originalImage, threshold))
                         {
-                            processedImage.Save(resultPath, ImageFormat.Png);
+                            await processedImage.SaveAsPngAsync(resultPath);
                         }
                     }
                 }

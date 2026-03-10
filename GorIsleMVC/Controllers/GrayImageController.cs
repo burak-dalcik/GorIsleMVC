@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -35,42 +35,34 @@ namespace GorIsleMVC.Controllers
             }
 
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
             var uniqueFileName = $"gray_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.jpg";
             var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-
-            var tempPath = Path.GetTempFileName();
             try
             {
-                using (var stream = new FileStream(tempPath, FileMode.Create))
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
+
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsJpegAsync(originalPath);
+
+                using var grayImage = new Image<Rgba32>(originalImage.Width, originalImage.Height);
+                for (int y = 0; y < originalImage.Height; y++)
                 {
-                    await imageFile.CopyToAsync(stream);
-                }
-
-
-                using (var originalImage = Image.FromFile(tempPath))
-                {
-                    originalImage.Save(originalPath, ImageFormat.Jpeg);
-
-
-                    using (var grayImage = new Bitmap(originalImage.Width, originalImage.Height))
+                    for (int x = 0; x < originalImage.Width; x++)
                     {
-                        for (int x = 0; x < originalImage.Width; x++)
-                        {
-                            for (int y = 0; y < originalImage.Height; y++)
-                            {
-                                var pixel = ((Bitmap)originalImage).GetPixel(x, y);
-                                var grayValue = (byte)((pixel.R + pixel.G + pixel.B) / 3);
-                                grayImage.SetPixel(x, y, Color.FromArgb(pixel.A, grayValue, grayValue, grayValue));
-                            }
-                        }
-
-                        grayImage.Save(filePath, ImageFormat.Jpeg);
+                        var p = originalImage[x, y];
+                        byte g = (byte)((p.R + p.G + p.B) / 3);
+                        grayImage[x, y] = new Rgba32(g, g, g, p.A);
                     }
                 }
-
+                await grayImage.SaveAsJpegAsync(filePath);
                 TempData["ProcessedImage"] = uniqueFileName;
                 TempData["OriginalImage"] = originalFileName;
                 return View("Result");
@@ -80,13 +72,6 @@ namespace GorIsleMVC.Controllers
                 TempData["Error"] = $"Görsel işlenirken bir hata oluştu: {ex.Message}";
                 return RedirectToAction(nameof(Upload));
             }
-            finally
-            {
-                if (System.IO.File.Exists(tempPath))
-                {
-                    System.IO.File.Delete(tempPath);
-                }
-            }
         }
     }
-} 
+}

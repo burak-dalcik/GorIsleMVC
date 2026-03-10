@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace GorIsleMVC.Controllers
 {
@@ -41,35 +41,30 @@ namespace GorIsleMVC.Controllers
                 var originalFileName = $"original_{DateTime.Now:yyyyMMddHHmmss}.png";
                 var originalPath = Path.Combine(uploadsFolder, originalFileName);
 
-                using (var stream = new MemoryStream())
+                using var stream = new MemoryStream();
+                await imageFile.CopyToAsync(stream);
+                stream.Position = 0;
+
+                using var originalImage = await Image.LoadAsync<Rgba32>(stream);
+                await originalImage.SaveAsPngAsync(originalPath);
+
+                Image<Rgba32> convertedImage = conversionType switch
                 {
-                    await imageFile.CopyToAsync(stream);
-                    stream.Position = 0;
+                    "RGB->YUV" => RgbToYuv(originalImage),
+                    "YUV->RGB" => YuvToRgb(originalImage),
+                    _ => throw new ArgumentException("Geçersiz dönüşüm tipi")
+                };
 
-                    using (var originalImage = Image.FromStream(stream))
-                    {
-                        originalImage.Save(originalPath, ImageFormat.Png);
+                using (convertedImage)
+                {
+                    var resultFileName = $"converted_{DateTime.Now:yyyyMMddHHmmss}.png";
+                    var resultPath = Path.Combine(uploadsFolder, resultFileName);
+                    await convertedImage.SaveAsPngAsync(resultPath);
 
-                        using (var bitmap = new Bitmap(originalImage))
-                        {
-                            var convertedImage = conversionType switch
-                            {
-                                "RGB->YUV" => RGBtoYUV(bitmap),
-                                "YUV->RGB" => YUVtoRGB(bitmap),
-                                _ => throw new ArgumentException("Geçersiz dönüşüm tipi")
-                            };
-
-                            var resultFileName = $"converted_{DateTime.Now:yyyyMMddHHmmss}.png";
-                            var resultPath = Path.Combine(uploadsFolder, resultFileName);
-                            convertedImage.Save(resultPath, ImageFormat.Png);
-
-                            TempData["OriginalImage"] = $"/uploads/{originalFileName}";
-                            TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
-                            TempData["ConversionType"] = conversionType;
-                        }
-                    }
+                    TempData["OriginalImage"] = $"/uploads/{originalFileName}";
+                    TempData["ProcessedImage"] = $"/uploads/{resultFileName}";
+                    TempData["ConversionType"] = conversionType;
                 }
-
                 return View("Result");
             }
             catch (Exception ex)
@@ -79,56 +74,41 @@ namespace GorIsleMVC.Controllers
             }
         }
 
-        private Bitmap RGBtoYUV(Bitmap rgb)
+        private static Image<Rgba32> RgbToYuv(Image<Rgba32> rgb)
         {
-            int width = rgb.Width;
-            int height = rgb.Height;
-            Bitmap result = new Bitmap(width, height);
-
-            for (int x = 0; x < width; x++)
+            int width = rgb.Width, height = rgb.Height;
+            var result = new Image<Rgba32>(width, height);
+            for (int y = 0; y < height; y++)
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    Color pixel = rgb.GetPixel(x, y);
-                    
-                    // RGB -> YUV dönüşüm formülleri
-                    byte Y = (byte)(0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B);
-                    byte U = (byte)(128 - 0.168736 * pixel.R - 0.331264 * pixel.G + 0.5 * pixel.B);
-                    byte V = (byte)(128 + 0.5 * pixel.R - 0.418688 * pixel.G - 0.081312 * pixel.B);
-
-                    result.SetPixel(x, y, Color.FromArgb(Y, U, V));
+                    var p = rgb[x, y];
+                    byte Y = (byte)(0.299 * p.R + 0.587 * p.G + 0.114 * p.B);
+                    byte U = (byte)(128 - 0.168736 * p.R - 0.331264 * p.G + 0.5 * p.B);
+                    byte V = (byte)(128 + 0.5 * p.R - 0.418688 * p.G - 0.081312 * p.B);
+                    result[x, y] = new Rgba32(Y, U, V, p.A);
                 }
             }
-
             return result;
         }
 
-        private Bitmap YUVtoRGB(Bitmap yuv)
+        private static Image<Rgba32> YuvToRgb(Image<Rgba32> yuv)
         {
-            int width = yuv.Width;
-            int height = yuv.Height;
-            Bitmap result = new Bitmap(width, height);
-
-            for (int x = 0; x < width; x++)
+            int width = yuv.Width, height = yuv.Height;
+            var result = new Image<Rgba32>(width, height);
+            for (int y = 0; y < height; y++)
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    Color pixel = yuv.GetPixel(x, y);
-                    
-                    double Y = pixel.R; // Y bileşeni
-                    double U = pixel.G - 128; // U bileşeni
-                    double V = pixel.B - 128; // V bileşeni
-
-                    // YUV -> RGB dönüşüm formülleri
-                    byte R = (byte)Math.Max(0, Math.Min(255, Y + 1.402 * V));
-                    byte G = (byte)Math.Max(0, Math.Min(255, Y - 0.344136 * U - 0.714136 * V));
-                    byte B = (byte)Math.Max(0, Math.Min(255, Y + 1.772 * U));
-
-                    result.SetPixel(x, y, Color.FromArgb(R, G, B));
+                    var p = yuv[x, y];
+                    double Y = p.R, U = p.G - 128, V = p.B - 128;
+                    byte R = (byte)Math.Clamp(Y + 1.402 * V, 0, 255);
+                    byte G = (byte)Math.Clamp(Y - 0.344136 * U - 0.714136 * V, 0, 255);
+                    byte B = (byte)Math.Clamp(Y + 1.772 * U, 0, 255);
+                    result[x, y] = new Rgba32(R, G, B, p.A);
                 }
             }
-
             return result;
         }
     }
-} 
+}
