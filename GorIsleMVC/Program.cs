@@ -1,7 +1,11 @@
+using GorIsleMVC.Services;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<UploadsCleanupOptions>(
+    builder.Configuration.GetSection("UploadsCleanup"));
+builder.Services.AddHostedService<UploadsCleanupService>();
 
 builder.Services.AddControllersWithViews();
 
